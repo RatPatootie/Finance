@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  Product: personal finance tracker for a single user, used daily on iPhone.
+  Goal: log expenses with minimal effort and always know how much can be spent today.
+
+  Architecture:
+  - Monorepo: /frontend (Angular PWA), /backend (.NET 10 Minimal API), /openspec.
+  - Offline-first: all data is written to IndexedDB (Dexie.js) first; UI never waits for the network.
+  - Backend is only for sync and backup. All calculations run on the client.
+  - Sync: client-generated Guid ids, UpdatedAt, IsDeleted (soft delete), last-write-wins.
+
+  Stack:
+  - Frontend: Angular (standalone components, signals), Angular Material, @angular/pwa,
+    Dexie.js, ngx-echarts, SheetJS for xlsx export. Mobile-first UI for iPhone Safari.
+  - Backend: .NET 10 Minimal API, EF Core with migrations, Azure SQL (serverless, auto-pause),
+    EnableRetryOnFailure. Auth via App Service Easy Auth (single user).
+  - Hosting: Azure Static Web Apps (Free) + App Service F1. CI/CD: GitHub Actions.
+  - Hard constraint: hosting cost must stay $0. No paid Azure resources.
+
+  Domain:
+  - Currency UAH. Money stored as integer minor units (kopecks) on the client, decimal on the backend.
+  - Day boundaries use Europe/Kyiv time zone.
+  - Free money = current balance - frozen amounts.
+  - Daily limit = free money / days left in month (including today).
+  - Today remaining = daily limit - spent today.
+  - Forecast = average daily spend of last 7 days * days left; over budget if forecast > free money.
+  - Status: green (within), yellow (near limit), red (over).
+  - Frozen amounts are excluded from daily budget; UI can show/hide them.
+  - Expense entry must take 2-3 taps: amount keypad -> category button -> saved (date defaults to today).
+
+rules:
+  proposal:
+    - Keep each change small and shippable on its own.
+    - State explicitly whether the change touches frontend, backend, or both.
+  specs:
+    - Use Given/When/Then scenarios.
+    - Include edge cases for calculations (last day of month, negative free money, zero days).
+  tasks:
+    - Include unit tests for every calculation.
+    - Frontend tasks must keep the app working offline.
