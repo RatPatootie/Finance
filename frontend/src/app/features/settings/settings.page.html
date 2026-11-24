@@ -1,0 +1,36 @@
+<header class="bar">
+  <button type="button" class="icon" data-testid="back" aria-label="Back" (click)="back()">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z" />
+    </svg>
+  </button>
+  <h1>Settings</h1>
+</header>
+
+<main class="page">
+  <h2 class="section">Budget</h2>
+  <ul class="list">
+    <li>
+      <button type="button" class="row" data-testid="row-balance" (click)="editBalance()">
+        <span class="name">Balance</span>
+        <span class="value" [class.unset]="balance() === null">{{ balanceText() }}</span>
+      </button>
+    </li>
+    <li>
+      <button type="button" class="row" data-testid="row-income" (click)="editIncome()">
+        <span class="name">Monthly income</span>
+        <span class="value">{{ money(settings()?.monthlyIncomeKopecks ?? 0) }}</span>
+      </button>
+    </li>
+    <li>
+      <button type="button" class="row" data-testid="row-payday" (click)="editPayday()">
+        <span class="name">Payday</span>
+        <span class="value">Day {{ settings()?.payday ?? 1 }}</span>
+      </button>
+    </li>
+  </ul>
+  <p class="note">
+    Enter the money you have now. New expenses are taken off it and your income is added on payday. If it drifts from
+    your bank, enter the right amount again.
+  </p>
+</main>

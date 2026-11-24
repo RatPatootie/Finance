@@ -7,17 +7,12 @@ import { Expense } from '../db/models';
 import { SettingsRepository } from '../db/settings.repository';
 import { Budget, computeBudget } from './budget';
 
-/**
- * Live budget figures for the home screen. Recomputes after any expense change,
- * any settings change, and when the Kyiv day changes.
- */
 @Injectable({ providedIn: 'root' })
 export class BudgetService {
   private readonly settingsRepo = inject(SettingsRepository);
   private readonly expenses = inject(ExpenseRepository);
   private readonly today = inject(TodayService).today;
 
-  /** Expenses since the balance day; `null` when no balance is set; `undefined` while loading. */
   private readonly sinceAnchor: Signal<Expense[] | null | undefined> = toSignal(
     toObservable(this.settingsRepo.settings).pipe(
       map((s) => (s === undefined ? undefined : s.balanceDate)),
@@ -26,11 +21,7 @@ export class BudgetService {
     ),
   );
 
-  /**
-   * - `undefined`: still loading (show nothing rather than a wrong figure);
-   * - `null`: no balance yet (show the set-up prompt);
-   * - otherwise the figures.
-   */
+  // undefined while loading, so no wrong figure flashes; null when no balance is set yet.
   readonly budget: Signal<Budget | null | undefined> = computed(() => {
     const settings = this.settingsRepo.settings();
     if (settings === undefined) return undefined;

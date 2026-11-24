@@ -48,6 +48,36 @@ describe('AmountSheet', () => {
     expect(dismiss).toHaveBeenCalledWith(undefined);
   });
 
+  it('adds up amounts: "10000 + 2000" shows a preview and Save stores the result', async () => {
+    const { el, fixture, dismiss } = create(AmountSheet, { title: 'Balance now', kopecks: null });
+    press(el, '10000+2000');
+    await fixture.whenStable();
+    expect(amount(el)).toBe('10000 + 2000');
+    expect(el.querySelector('[data-testid="calc-result"]')!.textContent!.replace(/[  ]/g, ' ').trim()).toBe(
+      '= 12 000,00 ₴',
+    );
+    el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!.click();
+    expect(dismiss).toHaveBeenCalledWith(1_200_000);
+  });
+
+  it('= replaces the expression with its result', async () => {
+    const { el, fixture } = create(AmountSheet, { title: 'Balance now', kopecks: null });
+    press(el, '8000+4500=');
+    await fixture.whenStable();
+    expect(amount(el)).toBe('12500');
+  });
+
+  it('an error blocks Save', async () => {
+    const { el, fixture, dismiss } = create(AmountSheet, { title: 'Balance now', kopecks: null });
+    press(el, '10-50');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-testid="calc-error"]')!.textContent).toContain('0 or more');
+    const save = el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!;
+    expect(save.disabled).toBe(true);
+    save.click();
+    expect(dismiss).not.toHaveBeenCalled();
+  });
+
   it('an empty amount saves as 0', () => {
     const { el, dismiss } = create(AmountSheet, { title: 'Monthly income', kopecks: 0 });
     el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!.click();

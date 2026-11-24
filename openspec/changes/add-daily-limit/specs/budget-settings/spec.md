@@ -37,6 +37,38 @@ The balance and the monthly income SHALL be entered with the same digit keypad a
 - **WHEN** the user saves a monthly income of "0"
 - **THEN** the monthly income is stored as 0
 
+### Requirement: Calculator keys for amount settings
+The balance and income keypad SHALL also have + − × ÷ keys and an = key, so the user can add up amounts (for example two cards). × and ÷ SHALL apply before + and −, and the result SHALL be rounded to whole kopecks. A pending result SHALL be shown under the expression. Saving SHALL store the result. Division by zero and a result below zero or above 9 999 999,99 ₴ SHALL show an error and SHALL NOT save. The expense entry keypad SHALL NOT change.
+
+#### Scenario: Add two amounts
+- **WHEN** the user types 8, 0, 0, 0, +, 4, 5, 0, 0 and taps =
+- **THEN** the amount shows "12500"
+
+#### Scenario: Save uses the result without tapping =
+- **WHEN** the user types 1, 0, 0, 0, 0, +, 2, 0, 0, 0 and saves
+- **THEN** 1200000 kopecks is stored
+
+#### Scenario: Multiplication before addition
+- **WHEN** the user types 1, 0, 0, +, 5, 0, ×, 2 and taps =
+- **THEN** the amount shows "200"
+
+#### Scenario: Division rounds to kopecks
+- **WHEN** the user types 1, 0, 0, ÷, 3 and taps =
+- **THEN** the amount shows "33.33"
+
+#### Scenario: A second operator replaces the first
+- **GIVEN** the expression is "100+"
+- **WHEN** the user taps −
+- **THEN** the expression is "100−"
+
+#### Scenario: Division by zero
+- **WHEN** the user types 1, 0, 0, ÷, 0
+- **THEN** an error is shown and Save does nothing
+
+#### Scenario: Negative result
+- **WHEN** the user types 1, 0, −, 5, 0
+- **THEN** an error is shown and Save does nothing
+
 ### Requirement: Choosing the payday
 The user SHALL choose the payday as a day of the month from 1 to 31. Before any choice the payday SHALL be 1.
 

@@ -12,7 +12,6 @@ import { CategoryGrid } from './category-grid';
 import { DateChip } from './date-chip';
 import { Keypad } from './keypad';
 
-/** Full-screen entry, opened from the home screen's add button. */
 @Component({
   selector: 'app-expense-entry-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,9 +29,7 @@ export class ExpenseEntryPage {
   protected readonly today = this.todayService.today;
   protected readonly categories = this.categoryRepo.active;
 
-  /** Keypad string ("" = nothing typed). */
   protected readonly amount = signal('');
-  /** A past day picked by the user; null means "today". */
   protected readonly pickedDate = signal<DateKey | null>(null);
   protected readonly saving = signal(false);
 
@@ -52,7 +49,6 @@ export class ExpenseEntryPage {
     void this.router.navigateByUrl('/');
   }
 
-  /** One tap on a category saves the expense and goes back home. */
   async onCategory(categoryId: string): Promise<void> {
     if (!this.canSave()) return; // ignores taps at 0 and a second fast tap while saving
     this.saving.set(true);

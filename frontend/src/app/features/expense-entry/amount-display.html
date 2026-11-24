@@ -1,0 +1,4 @@
+<output class="amount" [class.empty]="!amount()" aria-live="polite" aria-label="Amount">
+  <span class="value" data-testid="amount">{{ amount() || '0' }}</span>
+  <span class="currency">₴</span>
+</output>

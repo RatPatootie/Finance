@@ -13,7 +13,6 @@
   position: relative;
 }
 
-// Settings sits in the top-right corner, out of the way.
 .gear {
   position: absolute;
   top: calc(8px + env(safe-area-inset-top));
@@ -129,7 +128,6 @@
   display: block;
 }
 
-// The add button sits at thumb height above the home indicator.
 .dock {
   position: fixed;
   inset: auto 0 0 0;

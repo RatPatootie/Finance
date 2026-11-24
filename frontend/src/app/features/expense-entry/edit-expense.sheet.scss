@@ -1,0 +1,42 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+h2 {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.btn {
+  min-width: 96px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  border: 0;
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+}
+.text {
+  background: transparent;
+  color: var(--mat-sys-primary);
+}
+.filled {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+.filled:disabled {
+  opacity: 0.38;
+  cursor: default;
+}

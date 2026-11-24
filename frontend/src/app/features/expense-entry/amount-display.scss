@@ -1,0 +1,19 @@
+.amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  min-height: 64px;
+}
+.value {
+  font: var(--mat-sys-display-medium);
+  letter-spacing: -0.02em;
+}
+.currency {
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+.empty .value {
+  color: var(--mat-sys-outline);
+}

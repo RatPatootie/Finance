@@ -42,11 +42,17 @@ All work is in `frontend/`. Run commands from that folder. `add-quick-expense-en
   - **Spec coverage:** the "Balance and left for today", "Over by" and "Figures update after a save" scenarios, plus the status class for green, yellow and red.
 - [x] 4.2 Show the "Set your balance" card when no balance is set, and add the gear button to the top-right corner. Both navigate to `/settings`. Verify a spec for the card, for each navigation, and that the add button still opens `/add`.
 
-## 5. Integration checks
+## 5. Calculator and shorter list
 
-- [x] 5.1 Run `npm test -- --watch=false` and `npm run build`. Verify both pass with no new warnings and the initial bundle stays under 500 kB.
-- [x] 5.2 In a production build at 375Г—812, in light and dark, set the balance, income and payday, add an expense, edit it and delete it. Verify the hero updates each time. Then go offline, reload, and verify that the settings and figures are unchanged.
-- [x] 5.3 Update the README feature list (daily limit done) and verify that the run steps written there still work.
+- [x] 5.1 Add a pure calculator in `core/money/calc.ts` (keys + − × ÷ =, operator replacement, × ÷ before + −, rounding to kopecks, errors for ÷0, below 0 and above the maximum). Verify a spec covers every scenario in "Calculator keys for amount settings".
+- [x] 5.2 Give the keypad an optional row of ÷ × − + = above the digits, used only by the Settings amount sheet. The sheet shows the expression, the pending result or an error, and saves the result; = replaces the expression with the result. Verify specs that the sheet saves 12 000 from "10000+2000", blocks Save on an error, and that the expense entry keypad still has no operator keys.
+- [x] 5.3 Limit the home list to the 3 newest expenses with "Show all N" / "Show less". Verify a spec for 5 expenses (3 shown, total of all 5, expand and collapse) and for 3 expenses (no control).
+
+## 6. Integration checks
+
+- [x] 6.1 Run `npm test -- --watch=false` and `npm run build`. Verify both pass with no new warnings and the initial bundle stays under 500 kB.
+- [x] 6.2 In a production build at 375Г—812, in light and dark, set the balance, income and payday, add an expense, edit it and delete it. Verify the hero updates each time. Then go offline, reload, and verify that the settings and figures are unchanged.
+- [x] 6.3 Update the README feature list (daily limit done) and verify that the run steps written there still work.
 
 ## Workflow follow-up
 

@@ -1,8 +1,4 @@
-/**
- * Converts a keypad amount string ("49.99", "0.5", "125", "") to integer kopecks.
- * Uses integer math on the two parts, never floating-point multiplication,
- * so values like "0.29" stay exact.
- */
+// Integer math on both parts avoids float errors such as 0.29 * 100 = 28.999…
 export function toKopecks(amount: string): number {
   if (amount === '') return 0;
   const [whole, fraction = ''] = amount.split('.');
@@ -11,7 +7,6 @@ export function toKopecks(amount: string): number {
   return hryvnias * 100 + kopecks;
 }
 
-/** Converts kopecks back to a keypad string, e.g. 4999 -> "49.99", 12500 -> "125". */
 export function toAmountString(kopecks: number): string {
   const whole = Math.trunc(kopecks / 100);
   const fraction = kopecks % 100;
@@ -23,7 +18,6 @@ const uahFormat = new Intl.NumberFormat('uk-UA', {
   maximumFractionDigits: 2,
 });
 
-/** Formats kopecks for display, e.g. 12500 -> "125,00 ₴". */
 export function formatUah(kopecks: number): string {
   return `${uahFormat.format(kopecks / 100)} ₴`;
 }

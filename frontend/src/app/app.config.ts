@@ -16,7 +16,6 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideNativeDateAdapter(),
-    // Day-month order and Monday as the first day of the week in the date picker.
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
     provideAppInitializer(async () => {
       const categories = inject(CategoryRepository);

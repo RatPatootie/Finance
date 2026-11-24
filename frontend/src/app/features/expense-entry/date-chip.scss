@@ -1,0 +1,47 @@
+:host {
+  display: inline-flex;
+  position: relative;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 22px;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-label-large);
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+.chip svg {
+  opacity: 0.7;
+}
+.chip:active {
+  background: var(--mat-sys-surface-container-high);
+}
+.chip.past {
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+.chip.past svg {
+  opacity: 1;
+}
+.chip:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+.hidden-input {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+}
