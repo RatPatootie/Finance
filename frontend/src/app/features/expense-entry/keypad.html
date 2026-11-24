@@ -1,0 +1,27 @@
+<div class="pad" [class.calc]="operators()">
+  @if (operators()) {
+    <div class="ops" role="group" aria-label="Calculator">
+      @for (o of ops; track o.key) {
+        <button type="button" class="op" [attr.aria-label]="o.aria" [attr.data-key]="o.key" (click)="calc.emit(o.key)">
+          {{ o.label }}
+        </button>
+      }
+    </div>
+  }
+  <div class="keypad" role="group" aria-label="Amount keypad">
+    @for (k of keys; track k.key) {
+      <button type="button" class="key" [attr.aria-label]="k.aria" [attr.data-key]="k.key" (click)="press.emit(k.key)">
+        @if (k.key === 'back') {
+          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H7.07L2.4 12l4.66-7H22v14zm-11.59-2L14 13.41 17.59 17 19 15.59 15.41 12 19 8.41 17.59 7 14 10.59 10.41 7 9 8.41 12.59 12 9 15.59z"
+            />
+          </svg>
+        } @else {
+          {{ k.label }}
+        }
+      </button>
+    }
+  </div>
+</div>

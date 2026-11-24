@@ -1,0 +1,17 @@
+<div class="grid" role="group" aria-label="Category">
+  @for (c of categories(); track c.id) {
+    <button
+      type="button"
+      class="cat"
+      [class.selected]="c.id === selectedId()"
+      [attr.aria-pressed]="selectedId() === undefined ? null : c.id === selectedId()"
+      [class.is-disabled]="disabled()"
+      [attr.aria-disabled]="disabled() || null"
+      (click)="picked.emit(c.id)"
+    >
+      {{ c.name }}
+    </button>
+  } @empty {
+    <p class="none">No categories</p>
+  }
+</div>

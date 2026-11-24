@@ -11,23 +11,19 @@ export class CategoryRepository {
   private readonly db = inject(FINANCE_DB);
   private readonly clock = inject(CLOCK);
 
-  /** Every category, including hidden and deleted ones, in sort order. */
   readonly all: Signal<Category[]> = toSignal(
     from(liveQuery(() => this.db.categories.orderBy('sortOrder').toArray())),
     { initialValue: [] },
   );
 
-  /** Categories offered for new expenses: not hidden, not deleted. */
   readonly active = computed(() => this.all().filter((c) => !c.isHidden && !c.isDeleted));
 
   private readonly map = computed(() => new Map(this.all().map((c) => [c.id, c])));
 
-  /** Finds any category, including hidden or deleted ones (for showing old expenses). */
   byId(id: string): Category | undefined {
     return this.map().get(id);
   }
 
-  /** Creates the default categories once, when the database has none. */
   async seedDefaultsIfEmpty(): Promise<void> {
     await this.db.transaction('rw', this.db.categories, async () => {
       if ((await this.db.categories.count()) > 0) return;

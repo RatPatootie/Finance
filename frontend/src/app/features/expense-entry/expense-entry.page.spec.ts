@@ -67,6 +67,11 @@ describe('ExpenseEntryPage', () => {
     expect(isInactive(categoryButton('Food'))).toBe(false);
   });
 
+  it('has no calculator keys', async () => {
+    const { el } = await setup();
+    for (const op of ['+', '-', '*', '/', '=']) expect(el.querySelector(`[data-key="${op}"]`)).toBeNull();
+  });
+
   it('ignores category taps at zero', async () => {
     const { categoryButton, press } = await setup();
     await press('00.00');

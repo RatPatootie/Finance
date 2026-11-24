@@ -11,72 +11,14 @@ import { CategoryGrid } from './category-grid';
 import { DateChip } from './date-chip';
 import { Keypad } from './keypad';
 
-/** Result of the sheet: 'saved', 'error', or undefined when cancelled. */
 export type EditResult = 'saved' | 'error' | undefined;
 
 @Component({
   selector: 'app-edit-expense-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AmountDisplay, CategoryGrid, DateChip, Keypad],
-  template: `
-    <div class="sheet">
-      <div class="top">
-        <h2>Edit expense</h2>
-        <app-date-chip [date]="date()" [today]="today()" (dateChange)="date.set($event)" />
-      </div>
-      <app-amount-display [amount]="amount()" />
-      <app-category-grid [categories]="categories()" [selectedId]="categoryId()" (picked)="categoryId.set($event)" />
-      <app-keypad (press)="onKey($event)" />
-      <div class="actions">
-        <button type="button" class="btn text" (click)="cancel()">Cancel</button>
-        <button type="button" class="btn filled" data-testid="save-edit" [disabled]="!canSave()" (click)="save()">Save</button>
-      </div>
-    </div>
-  `,
-  styles: `
-    .sheet {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-    }
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    h2 {
-      margin: 0;
-      font: var(--mat-sys-title-large);
-    }
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    .btn {
-      min-width: 96px;
-      height: 44px;
-      padding: 0 20px;
-      border-radius: 22px;
-      border: 0;
-      font: var(--mat-sys-label-large);
-      cursor: pointer;
-    }
-    .text {
-      background: transparent;
-      color: var(--mat-sys-primary);
-    }
-    .filled {
-      background: var(--mat-sys-primary);
-      color: var(--mat-sys-on-primary);
-    }
-    .filled:disabled {
-      opacity: 0.38;
-      cursor: default;
-    }
-  `,
+  templateUrl: './edit-expense.sheet.html',
+  styleUrl: './edit-expense.sheet.scss',
 })
 export class EditExpenseSheet {
   private readonly ref = inject<MatBottomSheetRef<EditExpenseSheet, EditResult>>(MatBottomSheetRef);

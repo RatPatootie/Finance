@@ -19,7 +19,6 @@ export class ExpenseRepository {
   private readonly db = inject(FINANCE_DB);
   private readonly clock = inject(CLOCK);
 
-  /** Live list of non-deleted expenses for one Kyiv day, newest first. */
   forDate$(date: DateKey): Observable<Expense[]> {
     return from(
       liveQuery(async () => {
@@ -29,7 +28,6 @@ export class ExpenseRepository {
     );
   }
 
-  /** Live list of every expense (deleted ones too) dated on or after `date`. */
   since$(date: DateKey): Observable<Expense[]> {
     return from(liveQuery(() => this.db.expenses.where('date').aboveOrEqual(date).toArray()));
   }
@@ -46,13 +44,11 @@ export class ExpenseRepository {
     return expense;
   }
 
-  /** Changes amount/category/date. Keeps id and createdAt; bumps updatedAt. */
   async update(id: string, changes: ExpenseChanges): Promise<void> {
     if (changes.amountKopecks !== undefined) assertAmount(changes.amountKopecks);
     await this.patch(id, changes);
   }
 
-  /** Marks the expense deleted; the record is kept for sync and undo. */
   softDelete(id: string): Promise<void> {
     return this.patch(id, { isDeleted: 1 });
   }
@@ -82,7 +78,6 @@ function assertAmount(kopecks: number): void {
   }
 }
 
-/** Sum of amounts in kopecks. */
 export function sumKopecks(expenses: readonly Pick<Expense, 'amountKopecks'>[]): number {
   return expenses.reduce((sum, e) => sum + e.amountKopecks, 0);
 }

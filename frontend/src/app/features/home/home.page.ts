@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Router } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { catchError, concatMap, EMPTY, firstValueFrom, switchMap } from 'rxjs';
 import { BudgetService } from '../../core/budget/budget.service';
 import { ExpenseRepository, sumKopecks } from '../../core/db/expense.repository';
 import { Expense } from '../../core/db/models';
@@ -51,25 +51,29 @@ export class HomePage {
       this.toast.show("Couldn't delete. Try again.", 'OK', 4000);
       return;
     }
-    const ref = this.toast.show(`Deleted ${formatUah(expense.amountKopecks)}`, 'Undo', UNDO_DURATION_MS);
-    ref.onAction().subscribe(() => {
-      this.expenses.restore(expense.id).catch((err) => {
-        console.error('Could not restore expense', err);
-        this.toast.show("Couldn't undo.", 'OK', 4000);
-      });
-    });
+    // onAction() completes when the snackbar closes, so this needs no manual unsubscribe.
+    this.toast
+      .show(`Deleted ${formatUah(expense.amountKopecks)}`, 'Undo', UNDO_DURATION_MS)
+      .onAction()
+      .pipe(
+        concatMap(() => this.expenses.restore(expense.id)),
+        catchError((err) => {
+          console.error('Could not restore expense', err);
+          this.toast.show("Couldn't undo.", 'OK', 4000);
+          return EMPTY;
+        }),
+      )
+      .subscribe();
   }
 
   async onEdit(expense: Expense): Promise<void> {
-    // Loaded on demand: the editor isn't needed to see the day or add an expense.
     const { EditExpenseSheet } = await import('../expense-entry/edit-expense.sheet');
     const ref = this.bottomSheet.open<EditExpenseSheet, Expense, EditResult>(EditExpenseSheet, {
       data: expense,
       ariaLabel: 'Edit expense',
     });
-    ref.afterDismissed().subscribe((result) => {
-      if (result === 'saved') this.toast.show('Expense updated');
-      if (result === 'error') this.toast.show("Couldn't save changes. Try again.", 'OK', 5000);
-    });
+    const result = await firstValueFrom(ref.afterDismissed());
+    if (result === 'saved') this.toast.show('Expense updated');
+    if (result === 'error') this.toast.show("Couldn't save changes. Try again.", 'OK', 5000);
   }
 }

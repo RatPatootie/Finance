@@ -10,11 +10,9 @@ export class FinanceDb extends Dexie {
   constructor(name = 'finance', options?: DexieOptions) {
     super(name, options);
     this.version(1).stores({
-      // First entry is the primary key; the rest are indexes.
       expenses: 'id, date, updatedAt, [isDeleted+date]',
       categories: 'id, sortOrder, updatedAt',
     });
-    // Version 2 only adds a table, so existing data is kept with no upgrade step.
     this.version(2).stores({
       settings: 'id',
     });

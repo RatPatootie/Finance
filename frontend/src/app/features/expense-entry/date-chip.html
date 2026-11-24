@@ -1,0 +1,17 @@
+<button type="button" class="chip" [class.past]="!isToday()" (click)="picker.open()" [attr.aria-label]="'Date: ' + label()">
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z" />
+  </svg>
+  <span data-testid="date-label">{{ label() }}</span>
+</button>
+<input
+  class="hidden-input"
+  tabindex="-1"
+  aria-hidden="true"
+  readonly
+  [matDatepicker]="picker"
+  [max]="maxDate()"
+  [value]="pickerValue()"
+  (dateChange)="onPicked($event.value)"
+/>
+<mat-datepicker #picker [touchUi]="true" />

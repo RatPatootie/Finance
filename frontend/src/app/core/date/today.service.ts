@@ -3,11 +3,7 @@ import { DOCUMENT } from '@angular/common';
 import { CLOCK } from './clock';
 import { DateKey, kyivDateKey, msUntilNextKyivMidnight } from './kyiv-date';
 
-/**
- * Holds today's Kyiv date as a signal. It refreshes at the next Kyiv midnight
- * and whenever the app comes back to the foreground (timers are paused while
- * iOS keeps the PWA in the background).
- */
+// iOS pauses timers while the PWA is in the background, so also refresh when it becomes visible.
 @Injectable({ providedIn: 'root' })
 export class TodayService {
   private readonly clock = inject(CLOCK);
@@ -29,7 +25,6 @@ export class TodayService {
     });
   }
 
-  /** Re-reads the clock. Returns the current day key. */
   refresh(): DateKey {
     const now = kyivDateKey(this.clock());
     if (now !== this._today()) this._today.set(now);

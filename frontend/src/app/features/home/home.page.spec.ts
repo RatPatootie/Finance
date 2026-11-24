@@ -66,6 +66,31 @@ describe('HomePage', () => {
     expect(hero()).toBe('125,00 ₴');
   });
 
+  it('lists only the 3 newest, with the total of all and a Show all / Show less toggle', async () => {
+    const { el, add, rows, hero, settle } = await setup();
+    for (let i = 1; i <= 5; i++) {
+      now = new Date(`2026-11-23T10:0${i}:00Z`);
+      await add(i * 1000, 'Food');
+    }
+    const toggle = () => el.querySelector<HTMLButtonElement>('[data-testid="toggle-all"]');
+    await settle(() => rows().length === 3 && !!toggle());
+    expect(rows().map((r) => r.match(/12:0(\d)/)![1])).toEqual(['5', '4', '3']);
+    expect(hero()).toBe('150,00 ₴');
+    expect(toggle()!.textContent!.trim()).toBe('Show all 5');
+    toggle()!.click();
+    await settle(() => rows().length === 5);
+    expect(toggle()!.textContent!.trim()).toBe('Show less');
+    toggle()!.click();
+    await settle(() => rows().length === 3);
+  });
+
+  it('shows no toggle with 3 or fewer', async () => {
+    const { el, add, rows, settle } = await setup();
+    for (let i = 1; i <= 3; i++) await add(i * 1000, 'Food');
+    await settle(() => rows().length === 3);
+    expect(el.querySelector('[data-testid="toggle-all"]')).toBeNull();
+  });
+
   it('the add button opens the entry screen', async () => {
     const { el, fixture } = await setup();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);

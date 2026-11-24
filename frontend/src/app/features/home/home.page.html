@@ -34,6 +34,7 @@
     class="today"
     [expenses]="todayExpenses()"
     [total]="todayTotal()"
+    [limit]="3"
     (edit)="onEdit($event)"
     (remove)="onDelete($event)"
   />

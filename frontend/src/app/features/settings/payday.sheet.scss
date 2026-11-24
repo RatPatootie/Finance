@@ -1,0 +1,36 @@
+.sheet {
+  padding: 8px 0 calc(16px + env(safe-area-inset-bottom));
+}
+h2 {
+  margin: 0 0 4px;
+  font: var(--mat-sys-title-large);
+}
+.hint {
+  margin: 0 0 16px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.day {
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-large);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.day:active {
+  background: var(--mat-sys-surface-container-highest);
+}
+.day.selected {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}

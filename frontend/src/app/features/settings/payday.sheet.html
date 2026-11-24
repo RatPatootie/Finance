@@ -1,0 +1,18 @@
+<div class="sheet">
+  <h2>Payday</h2>
+  <p class="hint">Day of the month your income arrives. In shorter months it moves to the last day.</p>
+  <div class="days" role="group" aria-label="Day of month">
+    @for (d of days; track d) {
+      <button
+        type="button"
+        class="day"
+        [class.selected]="d === current"
+        [attr.aria-pressed]="d === current"
+        [attr.data-day]="d"
+        (click)="pick(d)"
+      >
+        {{ d }}
+      </button>
+    }
+  </div>
+</div>

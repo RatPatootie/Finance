@@ -7,7 +7,6 @@ import { kyivDateKey } from '../date/kyiv-date';
 import { FINANCE_DB } from './finance-db';
 import { BudgetSettings, DEFAULT_SETTINGS, nextTimestamp } from './models';
 
-/** Largest amount the keypad can produce (9 999 999.99 ₴). */
 export const MAX_SETTING_KOPECKS = 999_999_999;
 
 @Injectable({ providedIn: 'root' })
@@ -15,20 +14,14 @@ export class SettingsRepository {
   private readonly db = inject(FINANCE_DB);
   private readonly clock = inject(CLOCK);
 
-  /**
-   * Live budget settings. `undefined` only while the first read is running;
-   * after that, defaults are returned when nothing has been saved yet.
-   */
   readonly settings: Signal<BudgetSettings | undefined> = toSignal(
     from(liveQuery(async () => (await this.db.settings.get('budget')) ?? DEFAULT_SETTINGS)),
   );
 
-  /** One read, for code that is not reactive. */
   async get(): Promise<BudgetSettings> {
     return (await this.db.settings.get('budget')) ?? DEFAULT_SETTINGS;
   }
 
-  /** Saves the balance the user has right now; this moves the balance anchor. */
   setBalance(kopecks: number): Promise<void> {
     assertKopecks(kopecks);
     const now = this.clock();
