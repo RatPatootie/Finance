@@ -2,13 +2,22 @@
 
 A personal finance tracker for iPhone. It's free, with no ads and no subscriptions. It runs as an offline-first PWA: every write goes to the device first, and the backend is used only for sync and backup.
 
-> **Status:** early scaffold. The Angular app and the .NET API have been generated, but none of the features below are built yet. Work is tracked as OpenSpec changes (see [Roadmap](#roadmap)).
+> **Status:** early development. Quick expense entry and the daily limit work offline in the app; the rest is planned. Work is tracked as OpenSpec changes (see [Roadmap](#roadmap)).
 
-## Features (planned)
+## Features
 
-- Current balance and spending at a glance
-- Add an expense in 2–3 taps: amount → category → saved (date defaults to today)
-- Daily spending limit
+Done:
+- Add an expense in 2 steps: type the amount, tap a category, and it's saved (the date defaults to today in Kyiv time; you can pick a past day)
+- Today's expenses with a day total; tap one to edit it, or delete it with Undo
+- Five starting categories: Food, Transport, Health, Shopping, Fun
+- Home screen with your balance and how much is left for today (green, yellow at 80 % of the daily limit, red when over)
+- Settings: current balance, monthly income and payday; new expenses come off the balance and income is added on payday
+- Works fully offline; data is stored on the device (IndexedDB)
+
+> On iPhone, use **Share → Add to Home Screen**. Safari can clear the data of websites you haven't opened for a while, and an installed app is kept safer. Backend sync (planned) will be the real backup.
+
+Planned:
+- Manage categories in Settings (add, rename, hide)
 - Frozen amounts that are left out of the daily budget, which you can show or hide
 - Statistics: how much you can still spend this month, whether you're on track, a forecast, and a category filter
 - Export to Excel or JSON
@@ -31,9 +40,9 @@ A personal finance tracker for iPhone. It's free, with no ads and no subscriptio
 **Frontend:** [`frontend/`](frontend/)
 - Angular 22 PWA (standalone components, signals) with a service worker
 - Angular Material (Azure/Blue palette)
-- Dexie.js (IndexedDB) for local storage *(planned)*
+- Dexie.js (IndexedDB) for local storage
 - ngx-echarts for charts, SheetJS for Excel export *(planned)*
-- Vitest for tests
+- Vitest for tests (with `fake-indexeddb` for database tests)
 
 **Backend:** [`backend/`](backend/)
 - .NET 10 Minimal API (`FinanceApp.Api`)
@@ -64,8 +73,15 @@ npm start          # http://localhost:4200
 ```
 
 ```powershell
-npm test           # unit tests (Vitest)
-npm run build      # production build in frontend/dist
+npm test -- --watch=false   # unit tests (Vitest), single run
+npm run build               # production build in frontend/dist
+```
+
+The service worker (offline mode) only runs in a production build. To try it locally:
+
+```powershell
+npm run build
+npx http-server dist/frontend/browser -p 8080 -c-1
 ```
 
 **Backend:**
@@ -90,8 +106,8 @@ CI/CD runs on GitHub Actions, with `paths:` filters so that frontend and backend
 
 Features are built one OpenSpec change at a time (`/opsx:explore` → `/opsx:propose` → `/opsx:apply` → `/opsx:archive`):
 
-1. `add-quick-expense-entry`
-2. `add-daily-limit`
+1. `add-quick-expense-entry` ✅ implemented, awaiting review and archive
+2. `add-daily-limit` ✅ implemented, awaiting review and archive
 3. `add-frozen-amounts`
 4. `add-statistics`
 5. `add-export`

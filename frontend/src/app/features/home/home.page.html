@@ -1,0 +1,48 @@
+<main class="page">
+  <button type="button" class="gear" data-testid="open-settings" aria-label="Settings" (click)="openSettings()">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"
+      />
+    </svg>
+  </button>
+
+  <section class="summary" aria-label="Budget">
+    @if (budget(); as b) {
+      <p class="label">Balance</p>
+      <p class="figure" data-testid="hero-balance">{{ money(b.balance) }}</p>
+      <p class="left" [class]="'status-' + b.status" data-testid="hero-left" [attr.data-status]="b.status">
+        <span class="dot" aria-hidden="true"></span>
+        @if (b.left >= 0) {
+          <span>Left today <strong>{{ money(b.left) }}</strong></span>
+          <span class="of">· of {{ money(b.limit) }}</span>
+        } @else {
+          <span>Over by <strong>{{ money(-b.left) }}</strong></span>
+          <span class="of">· limit {{ money(b.limit) }}</span>
+        }
+      </p>
+    } @else if (budget() === null) {
+      <button type="button" class="setup" data-testid="setup-balance" (click)="openSettings()">
+        <span class="setup-title">Set your balance</span>
+        <span class="setup-text">to see how much you can spend today</span>
+      </button>
+    }
+  </section>
+
+  <app-today-list
+    class="today"
+    [expenses]="todayExpenses()"
+    [total]="todayTotal()"
+    (edit)="onEdit($event)"
+    (remove)="onDelete($event)"
+  />
+</main>
+
+<div class="dock">
+  <button type="button" class="add" data-testid="add-expense" aria-label="Add expense" (click)="add()">
+    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+      <path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" />
+    </svg>
+  </button>
+</div>
