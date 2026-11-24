@@ -8,10 +8,10 @@ A personal finance tracker for iPhone. It's free, with no ads and no subscriptio
 
 Done:
 - Add an expense in 2 steps: type the amount, tap a category, and it's saved (the date defaults to today in Kyiv time; you can pick a past day)
-- Today's expenses with a day total; tap one to edit it, or delete it with Undo
+- Today's expenses with a day total (the 3 newest on the home screen, with Show all); tap one to edit it, or delete it with Undo
 - Five starting categories: Food, Transport, Health, Shopping, Fun
 - Home screen with your balance and how much is left for today (green, yellow at 80 % of the daily limit, red when over)
-- Settings: current balance, monthly income and payday; new expenses come off the balance and income is added on payday
+- Settings: current balance, monthly income and payday, typed on a keypad with + − × ÷ = so you can add up several accounts; new expenses come off the balance and income is added on payday
 - Works fully offline; data is stored on the device (IndexedDB)
 
 > On iPhone, use **Share → Add to Home Screen**. Safari can clear the data of websites you haven't opened for a while, and an installed app is kept safer. Backend sync (planned) will be the real backup.

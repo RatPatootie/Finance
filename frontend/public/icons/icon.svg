@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Source of the app icon: a "left for today" ring with the hryvnia sign.
+       Full-bleed square: iOS and Android round the corners themselves.
+       Everything sits inside the maskable safe zone (radius 204 from the centre). -->
+  <rect width="512" height="512" fill="#001b3f"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#3f7fd1" stroke-width="48"/>
+  <path d="M256 106 A150 150 0 1 1 106 256" fill="none" stroke="#7fd893" stroke-width="48" stroke-linecap="round"/>
+  <path d="M221 208 Q256 177 291 208 Q296 230 256 256 Q216 282 221 304 Q256 335 291 304" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M212 243 H300 M212 269 H300" stroke="#ffffff" stroke-width="13" stroke-linecap="round"/>
+</svg>
