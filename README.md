@@ -106,9 +106,9 @@ CI/CD runs on GitHub Actions, with `paths:` filters so that frontend and backend
 
 Features are built one OpenSpec change at a time (`/opsx:explore` → `/opsx:propose` → `/opsx:apply` → `/opsx:archive`):
 
-1. `add-quick-expense-entry` ✅ implemented, awaiting review and archive
-2. `add-daily-limit` ✅ implemented, awaiting review and archive
-3. `add-category-management`, `add-frozen-amounts`, `add-week-overview` ✅ implemented, awaiting review and archive
+1. `add-quick-expense-entry` ✅ done
+2. `add-daily-limit` ✅ done
+3. `add-category-management`, `add-frozen-amounts`, `add-week-overview` ✅ done
 4. `add-statistics`
 5. `add-export`
 6. Deploy to Static Web Apps and test on iPhone
