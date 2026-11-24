@@ -75,4 +75,21 @@ describe('BudgetService', () => {
     const b = await waitBudget((x) => x.balance === 4_000_000);
     expect(b.limit).toBe(Math.floor(4_000_000 / 6));
   });
+
+  it('a freeze, a return and deleting a freeze update the figures live', async () => {
+    const { settings, expenses, waitBudget } = await setup();
+    const vacation = await TestBed.inject(CategoryRepository).add('Vacation', 'frozen');
+    await settings.setBalance(1_200_000);
+    await waitBudget((b) => b.limit === 171_428);
+
+    now = new Date('2026-11-24T10:00:00Z');
+    const freeze = await expenses.add({ amountKopecks: 200_000, categoryId: vacation.id, date: '2026-11-24' });
+    await waitBudget((b) => b.frozen === 200_000 && b.limit === 142_857 && b.balance === 1_200_000 && b.spentToday === 0);
+
+    await expenses.add({ amountKopecks: 50_000, categoryId: vacation.id, date: '2026-11-24', kind: 'return' });
+    await waitBudget((b) => b.frozen === 150_000);
+
+    await expenses.softDelete(freeze.id);
+    await waitBudget((b) => b.frozen === 0 && b.limit === 171_428);
+  });
 });

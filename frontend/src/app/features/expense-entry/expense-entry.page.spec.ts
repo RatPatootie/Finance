@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideNativeDateAdapter } from '@angular/material/core';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { CategoryRepository } from '../../core/db/category.repository';
 import { ExpenseRepository } from '../../core/db/expense.repository';
 import { FinanceDb } from '../../core/db/finance-db';
@@ -14,6 +14,9 @@ describe('ExpenseEntryPage', () => {
   let db: FinanceDb;
   let toast: { show: ReturnType<typeof vi.fn> };
   let navigate: ReturnType<typeof vi.fn>;
+  let linkDate: string | null = null;
+
+  afterEach(() => (linkDate = null));
 
   async function setup() {
     now = new Date('2026-11-23T10:00:00Z'); // 12:00 Kyiv
@@ -27,6 +30,10 @@ describe('ExpenseEntryPage', () => {
         provideNativeDateAdapter(),
         { provide: CLOCK, useValue: () => now },
         { provide: Toast, useValue: toast },
+        {
+          provide: ActivatedRoute,
+          useFactory: () => ({ snapshot: { queryParamMap: convertToParamMap(linkDate ? { date: linkDate } : {}) } }),
+        },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true) as never;
@@ -65,6 +72,67 @@ describe('ExpenseEntryPage', () => {
     expect(isInactive(categoryButton('Food'))).toBe(true);
     await press('.5');
     expect(isInactive(categoryButton('Food'))).toBe(false);
+  });
+
+  it('shows added and renamed categories and drops removed ones', async () => {
+    const { el, fixture } = await setup();
+    const repo = TestBed.inject(CategoryRepository);
+    await repo.add('Coffee', 'normal');
+    const fun = repo.listed().find((c) => c.name === 'Fun')!;
+    await repo.rename(fun.id, 'Going out');
+    const health = repo.listed().find((c) => c.name === 'Health')!;
+    await repo.remove(health.id);
+    const names = () => [...el.querySelectorAll('app-category-grid button')].map((b) => b.textContent!.trim());
+    await until(
+      () => {
+        fixture.detectChanges();
+        return names().join(',');
+      },
+      (s) => s === 'Food,Transport,Shopping,Going out,Coffee',
+    );
+  });
+
+  it('lists frozen categories last with a snowflake; saving there freezes, not spends', async () => {
+    const { el, fixture, press, waitSaved } = await setup();
+    const repo = TestBed.inject(CategoryRepository);
+    const vacation = await repo.add('Vacation', 'frozen');
+    await until(
+      () => {
+        fixture.detectChanges();
+        return [...el.querySelectorAll('app-category-grid button')].map((b) => b.textContent!.trim()).join(',');
+      },
+      (s) => s === 'Food,Transport,Health,Shopping,Fun,Vacation',
+    );
+    const button = [...el.querySelectorAll<HTMLButtonElement>('app-category-grid button')].at(-1)!;
+    expect(button.querySelector('svg[aria-label="Frozen"]')).not.toBeNull();
+    await press('2000');
+    button.click();
+    await waitSaved(1);
+    expect((await db.expenses.toArray())[0]).toMatchObject({ categoryId: vacation.id, amountKopecks: 200_000 });
+    await until(
+      () => toast.show.mock.calls.length,
+      (n) => n > 0,
+    );
+    expect(toast.show.mock.calls[0][0]).toMatch(/^Frozen 2.000,00.₴ · Vacation$/);
+  });
+
+  it('starts on the past day from the link and saves to it', async () => {
+    linkDate = '2026-11-22';
+    const { el, categoryButton, press, waitSaved } = await setup();
+    expect(el.querySelector('[data-testid="date-label"]')!.textContent!.trim()).toBe('Yesterday · Sun 22 Nov');
+    await press('70');
+    categoryButton('Food').click();
+    await waitSaved(1);
+    expect((await db.expenses.toArray())[0].date).toBe('2026-11-22');
+  });
+
+  it('ignores a future or malformed date in the link', async () => {
+    for (const bad of ['2026-11-25', 'tomorrow']) {
+      TestBed.resetTestingModule();
+      linkDate = bad;
+      const { el } = await setup();
+      expect(el.querySelector('[data-testid="date-label"]')!.textContent!.trim()).toBe('Today');
+    }
   });
 
   it('has no calculator keys', async () => {

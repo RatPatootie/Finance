@@ -78,6 +78,27 @@ describe('AmountSheet', () => {
     expect(dismiss).not.toHaveBeenCalled();
   });
 
+  it('with a maximum: blocks more than the maximum and 0, allows up to it', async () => {
+    const { el, fixture, dismiss } = create(AmountSheet, {
+      title: 'Return from Vacation',
+      kopecks: null,
+      max: 200_000,
+      maxMessage: 'More than is frozen',
+    });
+    const save = () => el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!;
+    await fixture.whenStable();
+    expect(save().disabled).toBe(true);
+    press(el, '2500');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-testid="limit-error"]')!.textContent).toContain('More than is frozen');
+    expect(save().disabled).toBe(true);
+    press(el, '<<<<500');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-testid="limit-error"]')).toBeNull();
+    save().click();
+    expect(dismiss).toHaveBeenCalledWith(50_000);
+  });
+
   it('an empty amount saves as 0', () => {
     const { el, dismiss } = create(AmountSheet, { title: 'Monthly income', kopecks: 0 });
     el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!.click();

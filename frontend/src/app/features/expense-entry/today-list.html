@@ -1,21 +1,39 @@
-<section aria-labelledby="today-heading">
+<section [attr.aria-labelledby]="headingId">
   <header class="head">
-    <h2 id="today-heading">Today</h2>
+    <h2 [id]="headingId">{{ heading() }}</h2>
     @if (showTotal()) {
       <span class="total" data-testid="today-total">{{ money(total()) }}</span>
     }
   </header>
 
   @if (expenses().length === 0) {
-    <p class="empty" data-testid="today-empty">Nothing spent today yet.</p>
+    <p class="empty" data-testid="today-empty">{{ emptyText() }}</p>
   } @else {
     <ul class="list">
       @for (e of visible(); track e.id) {
-        <li class="row" data-testid="expense-row">
+        <li class="row" data-testid="expense-row" [attr.data-kind]="kind(e)" [class.aside]="kind(e) !== 'spend'">
           <button type="button" class="main" (click)="edit.emit(e)" [attr.aria-label]="'Edit ' + categoryName(e) + ' ' + money(e.amountKopecks)">
-            <span class="cat">{{ categoryName(e) }}</span>
+            <span class="cat">
+              @if (kind(e) !== 'spend') {
+                <svg class="snow" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    d="M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2 3-2M9 20l3-2 3 2"
+                  />
+                </svg>
+              }
+              {{ categoryName(e) }}
+              @if (kind(e) === 'freeze') {
+                <span class="mark">· Frozen</span>
+              } @else if (kind(e) === 'return') {
+                <span class="mark">· Returned</span>
+              }
+            </span>
             <span class="time">{{ time(e.createdAt) }}</span>
-            <span class="amt">{{ money(e.amountKopecks) }}</span>
+            <span class="amt">{{ kind(e) === 'return' ? '−' : '' }}{{ money(e.amountKopecks) }}</span>
           </button>
           <button type="button" class="del" (click)="remove.emit(e)" [attr.aria-label]="'Delete ' + categoryName(e) + ' ' + money(e.amountKopecks)">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">

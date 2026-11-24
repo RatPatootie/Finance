@@ -11,15 +11,13 @@
   <section class="summary" aria-label="Budget">
     @if (budget(); as b) {
       <p class="label">Balance</p>
-      <p class="figure" data-testid="hero-balance">{{ money(b.balance) }}</p>
+      <p class="figure" data-testid="hero-balance">{{ money(shownBalance()) }}</p>
       <p class="left" [class]="'status-' + b.status" data-testid="hero-left" [attr.data-status]="b.status">
         <span class="dot" aria-hidden="true"></span>
         @if (b.left >= 0) {
-          <span>Left today <strong>{{ money(b.left) }}</strong></span>
-          <span class="of">· of {{ money(b.limit) }}</span>
+          <span><strong>{{ money(b.left) }}</strong> left today</span>
         } @else {
-          <span>Over by <strong>{{ money(-b.left) }}</strong></span>
-          <span class="of">· limit {{ money(b.limit) }}</span>
+          <span><strong>{{ money(-b.left) }}</strong> over today</span>
         }
       </p>
     } @else if (budget() === null) {
@@ -30,20 +28,31 @@
     }
   </section>
 
+  <div class="add-row">
+    <button type="button" class="add" data-testid="add-expense" aria-label="Add expense" (click)="add()">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linejoin="round"
+          d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z"
+        />
+        <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9 8h6M9 12h6M9 16h3" />
+      </svg>
+    </button>
+  </div>
+
   <app-today-list
     class="today"
-    [expenses]="todayExpenses()"
-    [total]="todayTotal()"
+    [heading]="listHeading()"
+    [emptyText]="emptyText()"
+    [expenses]="listed()"
+    [total]="dayTotal()"
     [limit]="3"
     (edit)="onEdit($event)"
     (remove)="onDelete($event)"
   />
-</main>
 
-<div class="dock">
-  <button type="button" class="add" data-testid="add-expense" aria-label="Add expense" (click)="add()">
-    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-      <path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" />
-    </svg>
-  </button>
-</div>
+  <app-week-strip class="week" [selected]="day()" (selectedChange)="pickDay($event)" />
+</main>

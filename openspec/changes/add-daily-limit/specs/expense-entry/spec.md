@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Home screen with an add button
-The app SHALL open on a home screen whose main figure is the current balance, with "left for today" smaller underneath in its status colour (green, yellow or red) and the daily limit next to it. When left for today is negative it SHALL read as "over by" the amount. Before any balance is set, the home screen SHALL show a prompt to set the balance that opens Settings, instead of the balance. The home screen SHALL have a button with an add icon at the bottom, within thumb reach. Tapping the button SHALL open the entry screen. The entry screen SHALL have a close control that returns home without saving. Today's list on the home screen SHALL show only the 3 newest expenses, with the day total and a control to show the rest, so the space below stays free for other content.
+The app SHALL open on a home screen whose main figure is the current balance, with a short "left today" line smaller underneath in its status colour (green, yellow or red). When left for today is negative it SHALL read as the amount "over today". Before any balance is set, the home screen SHALL show a prompt to set the balance that opens Settings, instead of the balance. The home screen SHALL have a small add button directly above today's list. Tapping the button SHALL open the entry screen. The entry screen SHALL have a close control that returns home without saving. Today's list on the home screen SHALL show only the 3 newest expenses, with the day total and a control to show the rest, so the space below stays free for other content.
 
 #### Scenario: Open the entry screen
 - **GIVEN** the home screen is shown
@@ -19,12 +19,12 @@ The app SHALL open on a home screen whose main figure is the current balance, wi
 - **GIVEN** the balance is 11 700,00 ₴, the daily limit is 1 714,28 ₴ and 300,00 ₴ was spent today
 - **WHEN** the home screen is shown
 - **THEN** the main figure is "11 700,00 ₴"
-- **AND** underneath it reads left for today "1 414,28 ₴" of "1 714,28 ₴" in green
+- **AND** underneath it reads "1 414,28 ₴ left today" in green
 
 #### Scenario: Over the limit
 - **GIVEN** the daily limit is 500,00 ₴ and 620,00 ₴ was spent today
 - **WHEN** the home screen is shown
-- **THEN** underneath the balance it reads over by "120,00 ₴" in red
+- **THEN** underneath the balance it reads "120,00 ₴ over today" in red
 
 #### Scenario: No balance yet
 - **GIVEN** no balance has been set

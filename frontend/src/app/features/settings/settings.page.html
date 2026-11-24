@@ -28,9 +28,68 @@
         <span class="value">Day {{ settings()?.payday ?? 1 }}</span>
       </button>
     </li>
+    <li>
+      <button
+        type="button"
+        class="row"
+        role="switch"
+        data-testid="toggle-show-frozen"
+        [attr.aria-checked]="showFrozen()"
+        (click)="toggleShowFrozen()"
+      >
+        <span class="name">Show frozen</span>
+        <span class="switch" [class.on]="showFrozen()" aria-hidden="true"><span class="knob"></span></span>
+      </button>
+    </li>
   </ul>
   <p class="note">
     Enter the money you have now. New expenses are taken off it and your income is added on payday. If it drifts from
     your bank, enter the right amount again.
   </p>
+
+  @if (frozenRows().length) {
+    <h2 class="section">Frozen money</h2>
+    <ul class="list" data-testid="frozen-list">
+      @for (f of frozenRows(); track f.category.id) {
+        <li>
+          <button
+            type="button"
+            class="row"
+            data-testid="frozen-row"
+            [disabled]="f.total === 0"
+            (click)="returnFrozen(f.category, f.total)"
+          >
+            <span class="name">{{ f.category.name }}</span>
+            <span class="end">
+              <span class="value">{{ money(f.total) }}</span>
+              @if (f.total > 0) {
+                <span class="action">Return</span>
+              }
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+    <p class="note">Return moves money from a frozen category back to what you can spend.</p>
+  }
+
+  <h2 class="section">Categories</h2>
+  <ul class="list" data-testid="category-list">
+    @for (c of categories(); track c.id) {
+      <li>
+        <button type="button" class="row" data-testid="category-row" (click)="editCategory(c)">
+          <span class="name">{{ c.name }}</span>
+          <span class="tag" [class.frozen]="isFrozen(c)">{{ isFrozen(c) ? 'Frozen' : 'Normal' }}</span>
+        </button>
+      </li>
+    }
+    <li>
+      <button type="button" class="row add" data-testid="add-category" (click)="addCategory()">
+        <span class="name">Add category</span>
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" />
+        </svg>
+      </button>
+    </li>
+  </ul>
 </main>

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CategoryRepository } from '../../core/db/category.repository';
 import { ExpenseRepository } from '../../core/db/expense.repository';
+import { categoryType } from '../../core/db/models';
 import { DateKey } from '../../core/date/kyiv-date';
 import { TodayService } from '../../core/date/today.service';
 import { applyKey, KeypadKey } from '../../core/money/keypad';
@@ -27,15 +28,20 @@ export class ExpenseEntryPage {
   private readonly toast = inject(Toast);
 
   protected readonly today = this.todayService.today;
-  protected readonly categories = this.categoryRepo.active;
+  protected readonly categories = this.categoryRepo.forEntry;
 
   protected readonly amount = signal('');
-  protected readonly pickedDate = signal<DateKey | null>(null);
+  protected readonly pickedDate = signal<DateKey | null>(this.dateFromLink());
   protected readonly saving = signal(false);
 
   protected readonly selectedDate = computed(() => this.pickedDate() ?? this.today());
   protected readonly kopecks = computed(() => toKopecks(this.amount()));
   protected readonly canSave = computed(() => this.kopecks() > 0 && !this.saving());
+
+  private dateFromLink(): DateKey | null {
+    const date = inject(ActivatedRoute).snapshot.queryParamMap.get('date');
+    return date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date < this.today() ? date : null;
+  }
 
   protected onKey(key: KeypadKey): void {
     this.amount.update((s) => applyKey(s, key));
@@ -57,8 +63,9 @@ export class ExpenseEntryPage {
     const date = this.pickedDate() ?? this.todayService.refresh();
     try {
       await this.expenses.add({ amountKopecks, categoryId, date });
-      const name = this.categoryRepo.byId(categoryId)?.name ?? '';
-      this.toast.show(`Saved ${formatUah(amountKopecks)} · ${name}`);
+      const category = this.categoryRepo.byId(categoryId);
+      const verb = category && categoryType(category) === 'frozen' ? 'Frozen' : 'Saved';
+      this.toast.show(`${verb} ${formatUah(amountKopecks)} · ${category?.name ?? ''}`);
       await this.router.navigateByUrl('/');
     } catch (err) {
       console.error('Could not save expense', err);

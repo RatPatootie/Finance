@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { CategoryRepository } from '../../core/db/category.repository';
-import { Expense } from '../../core/db/models';
+import { categoryType, Expense } from '../../core/db/models';
 import { formatKyivTime } from '../../core/date/format';
 import { formatUah } from '../../core/money/money';
+
+let nextListId = 0;
 
 @Component({
   selector: 'app-today-list',
@@ -14,6 +16,9 @@ export class TodayList {
   private readonly categories = inject(CategoryRepository);
 
   readonly expenses = input.required<readonly Expense[]>();
+  readonly heading = input('Today');
+  readonly emptyText = input('Nothing spent today yet.');
+  protected readonly headingId = `list-heading-${nextListId++}`;
   readonly total = input.required<number>();
   readonly showTotal = input(true);
   readonly limit = input<number | null>(null);
@@ -33,6 +38,12 @@ export class TodayList {
 
   protected readonly money = formatUah;
   protected readonly time = formatKyivTime;
+
+  protected kind(e: Expense): 'spend' | 'freeze' | 'return' {
+    const category = this.categories.byId(e.categoryId);
+    if (!category || categoryType(category) !== 'frozen') return 'spend';
+    return e.kind === 'return' ? 'return' : 'freeze';
+  }
 
   protected categoryName(e: Expense): string {
     return this.categories.byId(e.categoryId)?.name ?? '—';

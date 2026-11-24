@@ -1,0 +1,46 @@
+<section class="week" aria-label="Week">
+  <p class="label" data-testid="week-label">{{ label() }}</p>
+  <div class="strip">
+    <button type="button" class="arrow" data-testid="prev-week" aria-label="Previous week" (click)="previous()">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+      </svg>
+    </button>
+
+    <div class="days">
+      @for (d of days(); track d.key) {
+        <button
+          type="button"
+          class="day"
+          data-testid="week-day"
+          [attr.data-day]="d.key"
+          [attr.data-state]="d.state"
+          [class]="'day state-' + d.state"
+          [class.today]="d.isToday"
+          [class.selected]="d.key === selected()"
+          [attr.aria-label]="d.label"
+          [attr.aria-pressed]="d.key === selected()"
+          [attr.aria-disabled]="d.isFuture || null"
+          [class.future]="d.isFuture"
+          (click)="pick(d)"
+        >
+          <span class="letter">{{ d.letter }}</span>
+          <span class="num">{{ d.dayOfMonth }}</span>
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="arrow"
+      data-testid="next-week"
+      aria-label="Next week"
+      [disabled]="isCurrentWeek()"
+      (click)="next()"
+    >
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path fill="currentColor" d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
+      </svg>
+    </button>
+  </div>
+</section>

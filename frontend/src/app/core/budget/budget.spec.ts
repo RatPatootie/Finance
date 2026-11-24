@@ -1,5 +1,5 @@
 import { BudgetSettings, DEFAULT_SETTINGS, Expense } from '../db/models';
-import { computeBudget, daysLeftInMonth, isCounted, paydaysBetween } from './budget';
+import { computeBudget, dayBudget, daysLeftInMonth, dayState, frozenTotals, isCounted, paydaysBetween } from './budget';
 
 const settings = (s: Partial<BudgetSettings> = {}): BudgetSettings => ({
   ...DEFAULT_SETTINGS,
@@ -80,6 +80,7 @@ describe('computeBudget', () => {
   it('spreads 12 000 over 7 days: limit 1 714,28', () => {
     expect(computeBudget(settings(), [], '2026-11-24')).toEqual({
       balance: 1_200_000,
+      frozen: 0,
       limit: 171_428,
       spentToday: 0,
       left: 171_428,
@@ -150,5 +151,81 @@ describe('computeBudget', () => {
 
   it('limit 0 with nothing spent is red', () => {
     expect(computeBudget(settings({ balanceKopecks: 0 }), [], '2026-11-24')!.status).toBe('red');
+  });
+});
+
+describe('frozen money', () => {
+  const VAC = 'vac';
+  const ids = new Set([VAC]);
+  const rec = (amount: number, date: string, kind?: 'return', isDeleted: 0 | 1 = 0): Expense => ({
+    ...exp(amount, date, '2026-11-24T08:00:00.000Z', isDeleted),
+    categoryId: VAC,
+    ...(kind ? { kind } : {}),
+  });
+
+  it('freeze, freeze, return = 1 800 per category and in total', () => {
+    const t = frozenTotals([rec(200_000, '2026-11-20'), rec(50_000, '2026-11-21'), rec(70_000, '2026-11-22', 'return')], ids, '2026-11-24');
+    expect(t.byCategory.get(VAC)).toBe(180_000);
+    expect(t.total).toBe(180_000);
+  });
+
+  it('ignores deleted records, records after the day and other categories', () => {
+    const t = frozenTotals(
+      [rec(200_000, '2026-11-20', undefined, 1), rec(10_000, '2026-11-25'), exp(5_000, '2026-11-20'), rec(30_000, '2026-11-24')],
+      ids,
+      '2026-11-24',
+    );
+    expect(t.total).toBe(30_000);
+  });
+
+  it('a category never goes below 0', () => {
+    expect(frozenTotals([rec(10_000, '2026-11-20'), rec(30_000, '2026-11-21', 'return')], ids, '2026-11-24').total).toBe(0);
+  });
+
+  it('a freeze does not change the balance or spending; it lowers the limit', () => {
+    const freeze = rec(200_000, '2026-11-24');
+    const b = computeBudget(settings(), [freeze], '2026-11-24', { ids, total: 200_000 })!;
+    expect(b).toMatchObject({ balance: 1_200_000, frozen: 200_000, spentToday: 0, limit: 142_857 });
+  });
+
+  it('returning the money brings the limit back', () => {
+    const records = [rec(200_000, '2026-11-24'), rec(200_000, '2026-11-24', 'return')];
+    const total = frozenTotals(records, ids, '2026-11-24').total;
+    expect(computeBudget(settings(), records, '2026-11-24', { ids, total })!.limit).toBe(171_428);
+  });
+});
+
+describe('day budget and state', () => {
+  const none = new Set<string>();
+  const s = settings({ balanceKopecks: 100_000, balanceDate: '2026-11-29', balanceSetAt: '2026-11-29T07:00:00.000Z' });
+  const at = (date: string, amount: number) => exp(amount, date, `${date}T08:00:00.000Z`);
+
+  it('the balance day itself uses the same rule as today: 12 000 on 24 Nov -> 1 714,28', () => {
+    expect(dayBudget(settings(), [], '2026-11-24', none, [])!.limit).toBe(171_428);
+  });
+
+  it('a past day ignores records dated after it', () => {
+    const records = [at('2026-11-29', 20_000), at('2026-11-30', 90_000)];
+    const sun = dayBudget(s, records, '2026-11-29', none, [])!;
+    expect(sun).toMatchObject({ limit: 50_000, spentToday: 20_000, left: 30_000 });
+  });
+
+  it('within, equal and over the limit; no records; before the balance day', () => {
+    const records = [at('2026-11-29', 50_000), at('2026-11-30', 60_000)];
+    const sun = dayBudget(s, records, '2026-11-29', none, []);
+    const mon = dayBudget(s, records, '2026-11-30', none, []);
+    expect(dayState([records[0]], sun, none)).toBe('ok');
+    expect(dayState([records[1]], mon, none)).toBe('over');
+    expect(dayState([], sun, none)).toBe('none');
+    const before = dayBudget(s, [], '2026-11-20', none, []);
+    expect(before).toBeNull();
+    expect(dayState([at('2026-11-20', 100)], before, none)).toBe('unknown');
+  });
+
+  it('a day with only frozen or deleted records counts as none', () => {
+    const ids = new Set(['vac']);
+    const freeze = { ...at('2026-11-29', 10_000), categoryId: 'vac' };
+    const deleted = { ...at('2026-11-29', 10_000), isDeleted: 1 as const };
+    expect(dayState([freeze, deleted], dayBudget(s, [], '2026-11-29', ids, [freeze]), ids)).toBe('none');
   });
 });

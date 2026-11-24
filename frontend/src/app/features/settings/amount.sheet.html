@@ -13,6 +13,9 @@
     } @else {
       <app-amount-display [amount]="expr()" />
     }
+    @if (limitError()) {
+      <p class="preview error" data-testid="limit-error" role="alert">{{ limitError() }}</p>
+    }
   </div>
   <app-keypad [operators]="true" (press)="onKey($event)" (calc)="onKey($event)" />
   <div class="actions">

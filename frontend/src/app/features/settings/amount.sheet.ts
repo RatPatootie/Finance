@@ -8,6 +8,8 @@ import { Keypad } from '../expense-entry/keypad';
 export interface AmountSheetData {
   title: string;
   kopecks: number | null;
+  max?: number;
+  maxMessage?: string;
 }
 
 @Component({
@@ -28,7 +30,17 @@ export class AmountSheet {
   protected readonly hasOp = computed(() => hasOperation(this.expr()));
   protected readonly pretty = computed(() => formatExpression(this.expr()));
   protected readonly result = computed(() => evaluate(this.expr()));
-  protected readonly canSave = computed(() => this.result().kind !== 'error');
+  private readonly value = computed(() => {
+    const r = this.result();
+    return r.kind === 'ok' ? r.kopecks : 0;
+  });
+  protected readonly limitError = computed(() => {
+    const max = this.data.max;
+    return max !== undefined && this.value() > max ? (this.data.maxMessage ?? 'Too large') : '';
+  });
+  protected readonly canSave = computed(
+    () => this.result().kind !== 'error' && !this.limitError() && (this.data.max === undefined || this.value() > 0),
+  );
 
   protected onKey(key: CalcKey): void {
     this.expr.update((s) => applyCalcKey(s, key));
@@ -39,8 +51,7 @@ export class AmountSheet {
   }
 
   protected save(): void {
-    const r = this.result();
-    if (r.kind === 'error') return;
-    this.ref.dismiss(r.kind === 'ok' ? r.kopecks : 0);
+    if (!this.canSave()) return;
+    this.ref.dismiss(this.value());
   }
 }

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { CategoryRepository } from '../../core/db/category.repository';
 import { ExpenseRepository } from '../../core/db/expense.repository';
-import { Expense } from '../../core/db/models';
+import { categoryType, Expense } from '../../core/db/models';
 import { TodayService } from '../../core/date/today.service';
 import { applyKey, KeypadKey } from '../../core/money/keypad';
 import { toAmountString, toKopecks } from '../../core/money/money';
@@ -32,11 +32,13 @@ export class EditExpenseSheet {
   protected readonly date = signal(this.expense.date);
   private readonly saving = signal(false);
 
-  /** Active categories, plus the expense's own one if it has since been hidden. */
+  // Same type only: moving a freeze into a normal category would silently turn it into spending.
+  // The expense's own category is kept even if it has since been hidden.
   protected readonly categories = computed(() => {
-    const active = this.categoryRepo.active();
-    if (active.some((c) => c.id === this.expense.categoryId)) return active;
     const own = this.categoryRepo.byId(this.expense.categoryId);
+    const type = own ? categoryType(own) : 'normal';
+    const active = this.categoryRepo.active().filter((c) => categoryType(c) === type);
+    if (active.some((c) => c.id === this.expense.categoryId)) return active;
     return own ? [...active, own] : active;
   });
 
