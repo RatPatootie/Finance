@@ -2,14 +2,16 @@
 
 A personal finance tracker for iPhone. It's free, with no ads and no subscriptions. It runs as an offline-first PWA: every write goes to the device first, and the backend is used only for sync and backup.
 
-> **Status:** early development. Quick expense entry and the daily limit work offline in the app; the rest is planned. Work is tracked as OpenSpec changes (see [Roadmap](#roadmap)).
+> **Status:** early development. Quick entry, the daily limit, categories, frozen money and the week view work offline in the app; the rest is planned. Work is tracked as OpenSpec changes (see [Roadmap](#roadmap)).
 
 ## Features
 
 Done:
 - Add an expense in 2 steps: type the amount, tap a category, and it's saved (the date defaults to today in Kyiv time; you can pick a past day)
 - Today's expenses with a day total (the 3 newest on the home screen, with Show all); tap one to edit it, or delete it with Undo
-- Five starting categories: Food, Transport, Health, Shopping, Fun
+- Categories: five to start with (Food, Transport, Health, Shopping, Fun); add, rename and remove them in Settings, and removing one moves its records to another category or to "Other"
+- Frozen categories set money aside: it is left out of the daily limit until you return it in Settings; a "Show frozen" switch shows or hides it
+- Week strip on the home screen: 7 days coloured by spending (green within the limit, red over it), arrows to switch weeks; tap a day to show and edit its records in the main list (the add button then adds to that day)
 - Home screen with your balance and how much is left for today (green, yellow at 80 % of the daily limit, red when over)
 - Settings: current balance, monthly income and payday, typed on a keypad with + − × ÷ = so you can add up several accounts; new expenses come off the balance and income is added on payday
 - Works fully offline; data is stored on the device (IndexedDB)
@@ -17,8 +19,6 @@ Done:
 > On iPhone, use **Share → Add to Home Screen**. Safari can clear the data of websites you haven't opened for a while, and an installed app is kept safer. Backend sync (planned) will be the real backup.
 
 Planned:
-- Manage categories in Settings (add, rename, hide)
-- Frozen amounts that are left out of the daily budget, which you can show or hide
 - Statistics: how much you can still spend this month, whether you're on track, a forecast, and a category filter
 - Export to Excel or JSON
 
@@ -106,9 +106,9 @@ CI/CD runs on GitHub Actions, with `paths:` filters so that frontend and backend
 
 Features are built one OpenSpec change at a time (`/opsx:explore` → `/opsx:propose` → `/opsx:apply` → `/opsx:archive`):
 
-1. `add-quick-expense-entry` ✅ implemented, awaiting review and archive
-2. `add-daily-limit` ✅ implemented, awaiting review and archive
-3. `add-frozen-amounts`
+1. `add-quick-expense-entry` ✅ done
+2. `add-daily-limit` ✅ done
+3. `add-category-management`, `add-frozen-amounts`, `add-week-overview` ✅ done
 4. `add-statistics`
 5. `add-export`
 6. Deploy to Static Web Apps and test on iPhone

@@ -1,0 +1,59 @@
+<form class="sheet" (submit)="$event.preventDefault(); save()">
+  <h2>{{ category ? 'Edit category' : 'New category' }}</h2>
+
+  <label class="field">
+    <span class="field-label">Name</span>
+    <input
+      type="text"
+      data-testid="category-name"
+      autocomplete="off"
+      enterkeyhint="done"
+      [attr.maxlength]="maxLength"
+      [value]="name()"
+      [attr.aria-invalid]="error() ? true : null"
+      (input)="onInput($any($event.target).value)"
+    />
+  </label>
+  @if (error()) {
+    <p class="error" role="alert" data-testid="category-error">{{ error() }}</p>
+  }
+
+  @if (category) {
+    <p class="type-fixed" data-testid="category-type">
+      {{ type() === 'frozen' ? 'Frozen' : 'Normal' }} category · the type can't be changed
+    </p>
+  } @else {
+    <div class="types" role="radiogroup" aria-label="Type">
+      <button
+        type="button"
+        role="radio"
+        data-testid="type-normal"
+        [attr.aria-checked]="type() === 'normal'"
+        (click)="type.set('normal')"
+      >
+        Normal
+      </button>
+      <button
+        type="button"
+        role="radio"
+        data-testid="type-frozen"
+        [attr.aria-checked]="type() === 'frozen'"
+        (click)="type.set('frozen')"
+      >
+        Frozen
+      </button>
+    </div>
+    <p class="hint">Frozen keeps money aside: it is left out of the daily limit until you return it.</p>
+  }
+
+  <div class="actions">
+    @if (category) {
+      <button type="button" class="btn danger" data-testid="remove-category" (click)="remove()">Remove</button>
+    }
+    <span class="spacer"></span>
+    <button type="button" class="btn text" data-testid="cancel-category" (click)="cancel()">Cancel</button>
+    <button type="submit" class="btn filled" data-testid="save-category" [disabled]="saving()">
+      {{ category ? 'Save' : 'Add' }}
+    </button>
+  </div>
+</form>

@@ -87,3 +87,18 @@ h2 {
   outline: 2px solid var(--mat-sys-primary);
   outline-offset: -2px;
 }
+
+.snow {
+  margin-right: 4px;
+  vertical-align: -2px;
+  color: var(--mat-sys-tertiary);
+}
+
+.mark {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.aside .amt {
+  color: var(--mat-sys-on-surface-variant);
+}

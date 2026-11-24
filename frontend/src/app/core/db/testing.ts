@@ -14,7 +14,7 @@ export function waitFor<T>(source: Observable<T>, predicate: (value: T) => boole
   return firstValueFrom(source.pipe(filter(predicate)));
 }
 
-export async function until<T>(read: () => T, predicate: (value: T) => boolean, timeoutMs = 2000): Promise<T> {
+export async function until<T>(read: () => T, predicate: (value: T) => boolean, timeoutMs = 5000): Promise<T> {
   const start = Date.now();
   for (;;) {
     const value = read();

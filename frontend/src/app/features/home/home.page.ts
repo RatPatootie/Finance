@@ -6,18 +6,23 @@ import { catchError, concatMap, EMPTY, firstValueFrom, switchMap } from 'rxjs';
 import { BudgetService } from '../../core/budget/budget.service';
 import { ExpenseRepository, sumKopecks } from '../../core/db/expense.repository';
 import { Expense } from '../../core/db/models';
+import { SettingsRepository } from '../../core/db/settings.repository';
+import { formatDayLabel } from '../../core/date/format';
+import { DateKey } from '../../core/date/kyiv-date';
 import { TodayService } from '../../core/date/today.service';
 import { formatUah } from '../../core/money/money';
 import { Toast } from '../../core/ui/toast';
 import type { EditExpenseSheet, EditResult } from '../expense-entry/edit-expense.sheet';
 import { TodayList } from '../expense-entry/today-list';
+import { ChosenDay } from './chosen-day';
+import { WeekStrip } from './week-strip/week-strip';
 
 export const UNDO_DURATION_MS = 6000;
 
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TodayList],
+  imports: [TodayList, WeekStrip],
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
@@ -27,16 +32,43 @@ export class HomePage {
   private readonly router = inject(Router);
   private readonly toast = inject(Toast);
 
-  protected readonly todayExpenses = toSignal(
-    toObservable(inject(TodayService).today).pipe(switchMap((day) => this.expenses.forDate$(day))),
+  private readonly today = inject(TodayService).today;
+  private readonly picked = inject(ChosenDay).picked;
+  protected readonly day = computed(() => this.picked() ?? this.today());
+  protected readonly isToday = computed(() => this.day() === this.today());
+  protected readonly listHeading = computed(() => (this.isToday() ? 'Today' : formatDayLabel(this.day())));
+  protected readonly emptyText = computed(() => (this.isToday() ? 'Nothing spent today yet.' : 'Nothing recorded this day.'));
+
+  private readonly dayExpenses = toSignal(
+    toObservable(this.day).pipe(switchMap((day) => this.expenses.forDate$(day))),
     { initialValue: [] as Expense[] },
   );
-  protected readonly todayTotal = computed(() => sumKopecks(this.todayExpenses()));
+  private readonly budgetService = inject(BudgetService);
+  private readonly settings = inject(SettingsRepository).settings;
+  private readonly frozenIds = this.budgetService.frozenIds;
+  private readonly showFrozen = computed(() => this.settings()?.showFrozen ?? true);
+
+  protected readonly listed = computed(() =>
+    this.showFrozen() ? this.dayExpenses() : this.dayExpenses().filter((e) => !this.frozenIds().has(e.categoryId)),
+  );
+  protected readonly dayTotal = computed(() =>
+    sumKopecks(this.dayExpenses().filter((e) => !this.frozenIds().has(e.categoryId))),
+  );
   protected readonly money = formatUah;
-  protected readonly budget = inject(BudgetService).budget;
+  protected readonly budget = this.budgetService.budget;
+  protected readonly shownBalance = computed(() => {
+    const b = this.budget();
+    if (!b) return 0;
+    return this.showFrozen() ? b.balance - b.frozen : b.balance;
+  });
+
+  protected pickDay(day: DateKey): void {
+    this.picked.set(day === this.today() ? null : day);
+  }
 
   protected add(): void {
-    void this.router.navigateByUrl('/add');
+    const day = this.picked();
+    void this.router.navigateByUrl(day ? `/add?date=${day}` : '/add');
   }
 
   protected openSettings(): void {

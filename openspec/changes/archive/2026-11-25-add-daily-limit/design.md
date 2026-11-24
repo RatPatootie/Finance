@@ -94,7 +94,7 @@ A `BudgetService` combines `settings` (liveQuery → signal), the expenses since
 - **Layout:**
   - a small label "Balance";
   - the balance as the large figure (the current 44 px style);
-  - one line underneath: "Left today 1 414,28 ₴ · of 1 714,28 ₴" or "Over by 120,00 ₴";
+  - one short line underneath: "1 414,28 ₴ left today" or "120,00 ₴ over today" (the limit itself is not shown, to keep it short);
   - a small status dot and text coloured by status.
 - **Colours** are theme-aware and must work in light and dark:
   - green from a custom token;
@@ -103,6 +103,7 @@ A `BudgetService` combines `settings` (liveQuery → signal), the expenses since
   - Contrast is checked in both schemes.
 - **Before set-up:** the hero is a tonal card, "Set your balance to see your daily limit", that navigates to `/settings`.
 - **Gear:** an icon button in the top-right corner of the home page.
+- **Add button:** a 48 px round button with a receipt icon, centred directly above today's list (no fixed bottom bar).
 
 ## Risks / Trade-offs
 

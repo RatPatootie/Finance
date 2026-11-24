@@ -38,6 +38,10 @@ export class SettingsRepository {
     return this.patch({ payday: day });
   }
 
+  setShowFrozen(show: boolean): Promise<void> {
+    return this.patch({ showFrozen: show });
+  }
+
   private async patch(changes: Partial<BudgetSettings>): Promise<void> {
     await this.db.transaction('rw', this.db.settings, async () => {
       const current = (await this.db.settings.get('budget')) ?? DEFAULT_SETTINGS;

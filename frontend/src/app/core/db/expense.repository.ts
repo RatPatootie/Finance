@@ -10,9 +10,10 @@ export interface NewExpense {
   amountKopecks: number;
   categoryId: string;
   date: DateKey;
+  kind?: 'return';
 }
 
-export type ExpenseChanges = Partial<NewExpense>;
+export type ExpenseChanges = Partial<Omit<NewExpense, 'kind'>>;
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseRepository {
@@ -28,8 +29,36 @@ export class ExpenseRepository {
     );
   }
 
+  between$(start: DateKey, end: DateKey): Observable<Expense[]> {
+    return from(
+      liveQuery(async () => {
+        const items = await this.db.expenses.where('[isDeleted+date]').between([0, start], [0, end], true, true).sortBy('createdAt');
+        return items.reverse();
+      }),
+    );
+  }
+
   since$(date: DateKey): Observable<Expense[]> {
     return from(liveQuery(() => this.db.expenses.where('date').aboveOrEqual(date).toArray()));
+  }
+
+  inCategories$(ids: readonly string[]): Observable<Expense[]> {
+    const set = new Set(ids);
+    return from(liveQuery(() => (set.size ? this.db.expenses.filter((e) => set.has(e.categoryId)).toArray() : [])));
+  }
+
+  countInCategory(categoryId: string): Promise<number> {
+    return this.db.expenses.filter((e) => e.categoryId === categoryId).count();
+  }
+
+  async moveCategory(fromId: string, toId: string): Promise<void> {
+    const now = this.clock();
+    await this.db.expenses
+      .filter((e) => e.categoryId === fromId)
+      .modify((e) => {
+        e.categoryId = toId;
+        e.updatedAt = nextTimestamp(now, e.updatedAt);
+      });
   }
 
   get(id: string): Promise<Expense | undefined> {

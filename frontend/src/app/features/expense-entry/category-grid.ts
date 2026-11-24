@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { Category } from '../../core/db/models';
+import { Category, categoryType } from '../../core/db/models';
 
 // aria-disabled instead of disabled: a fast tap right after typing can land before the DOM re-renders.
 @Component({
@@ -13,4 +13,8 @@ export class CategoryGrid {
   readonly disabled = input(false);
   readonly selectedId = input<string | undefined>(undefined);
   readonly picked = output<string>();
+
+  protected isFrozen(c: Category): boolean {
+    return categoryType(c) === 'frozen';
+  }
 }

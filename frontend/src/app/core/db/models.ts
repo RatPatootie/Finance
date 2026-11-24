@@ -11,18 +11,31 @@ export interface Expense {
   date: DateKey;
   createdAt: string;
   updatedAt: string;
+  // In a frozen category a record freezes money; 'return' moves it back to the free money.
+  kind?: 'return';
   /** Soft delete: deleted records stay so the deletion can be synced. */
   isDeleted: Flag;
 }
+
+export type CategoryType = 'normal' | 'frozen';
 
 export interface Category {
   id: string;
   name: string;
   sortOrder: number;
+  // Missing on categories created before types existed; read through categoryType().
+  type?: CategoryType;
   isHidden: Flag;
   updatedAt: string;
   isDeleted: Flag;
 }
+
+export function categoryType(c: Pick<Category, 'type'>): CategoryType {
+  return c.type ?? 'normal';
+}
+
+export const CATEGORY_NAME_MAX = 24;
+export const OTHER_CATEGORY_NAME = 'Other';
 
 export interface BudgetSettings {
   id: 'budget';
@@ -32,6 +45,7 @@ export interface BudgetSettings {
   balanceDate: DateKey | null;
   monthlyIncomeKopecks: number;
   payday: number;
+  showFrozen?: boolean;
   updatedAt: string;
 }
 
@@ -42,6 +56,7 @@ export const DEFAULT_SETTINGS: BudgetSettings = {
   balanceDate: null,
   monthlyIncomeKopecks: 0,
   payday: 1,
+  showFrozen: true,
   updatedAt: '1970-01-01T00:00:00.000Z',
 };
 

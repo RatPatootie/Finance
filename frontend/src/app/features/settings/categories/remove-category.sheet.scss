@@ -1,0 +1,95 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+h2 {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+  overflow-wrap: anywhere;
+}
+
+.msg {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  max-height: 40dvh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--mat-sys-surface-container);
+}
+
+.target {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-large);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  & + & {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.radio {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  border: 2px solid var(--mat-sys-on-surface-variant);
+}
+
+.target[aria-checked='true'] .radio {
+  border: 6px solid var(--mat-sys-primary);
+}
+
+.error {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  min-width: 96px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  border: 0;
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn.text {
+  background: transparent;
+  color: var(--mat-sys-primary);
+}
+
+.danger {
+  background: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
+
+  &:disabled {
+    opacity: 0.38;
+  }
+}

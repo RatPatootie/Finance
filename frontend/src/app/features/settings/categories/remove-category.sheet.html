@@ -1,0 +1,46 @@
+<div class="sheet">
+  <h2>Remove “{{ data.category.name }}”?</h2>
+
+  @if (data.count === 0) {
+    <p class="msg">It has no expenses.</p>
+  } @else if (blocked()) {
+    <p class="msg" data-testid="remove-blocked">
+      It has {{ data.count }} {{ data.count === 1 ? 'record' : 'records' }}. Add another frozen category first to move
+      {{ data.count === 1 ? 'it' : 'them' }} there.
+    </p>
+  } @else {
+    <p class="msg" data-testid="remove-count">
+      It has {{ data.count }} {{ data.count === 1 ? 'record' : 'records' }}. Move {{ data.count === 1 ? 'it' : 'them' }} to:
+    </p>
+    <div class="targets" role="radiogroup" aria-label="Move records to">
+      @for (o of options(); track o.target) {
+        <button
+          type="button"
+          role="radio"
+          class="target"
+          [attr.data-target]="o.label"
+          [attr.aria-checked]="o.target === target()"
+          (click)="picked.set(o.target)"
+        >
+          <span class="radio" aria-hidden="true"></span>
+          {{ o.label }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <div class="actions">
+    <button type="button" class="btn text" data-testid="cancel-remove" (click)="cancel()">
+      {{ blocked() ? 'Close' : 'Cancel' }}
+    </button>
+    @if (!blocked()) {
+      <button type="button" class="btn danger" data-testid="confirm-remove" [disabled]="busy()" (click)="confirm()">
+        Remove
+      </button>
+    }
+  </div>
+</div>

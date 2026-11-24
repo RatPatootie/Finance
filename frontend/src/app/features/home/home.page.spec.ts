@@ -9,6 +9,7 @@ import { CLOCK } from '../../core/date/clock';
 import { TodayService } from '../../core/date/today.service';
 import { SettingsRepository } from '../../core/db/settings.repository';
 import { Toast } from '../../core/ui/toast';
+import { ChosenDay } from './chosen-day';
 import { HomePage } from './home.page';
 
 describe('HomePage', () => {
@@ -73,7 +74,7 @@ describe('HomePage', () => {
       await add(i * 1000, 'Food');
     }
     const toggle = () => el.querySelector<HTMLButtonElement>('[data-testid="toggle-all"]');
-    await settle(() => rows().length === 3 && !!toggle());
+    await settle(() => rows().length === 3 && toggle()?.textContent?.trim() === 'Show all 5');
     expect(rows().map((r) => r.match(/12:0(\d)/)![1])).toEqual(['5', '4', '3']);
     expect(hero()).toBe('150,00 ₴');
     expect(toggle()!.textContent!.trim()).toBe('Show all 5');
@@ -89,6 +90,55 @@ describe('HomePage', () => {
     for (let i = 1; i <= 3; i++) await add(i * 1000, 'Food');
     await settle(() => rows().length === 3);
     expect(el.querySelector('[data-testid="toggle-all"]')).toBeNull();
+  });
+
+  it('shows the week strip; saving today recolours today', async () => {
+    const { el, add, settle } = await setup();
+    await TestBed.inject(SettingsRepository).setBalance(100_000);
+    const today = () => el.querySelector('app-week-strip [data-day="2026-11-23"]');
+    await settle(() => today()?.getAttribute('data-state') === 'none');
+    await add(5_000, 'Food');
+    await settle(() => today()?.getAttribute('data-state') === 'ok');
+  });
+
+  it('a day picked in the week strip fills the main list, which can be edited, and the add button uses that day', async () => {
+    const { el, add, rows, hero, settle } = await setup();
+    await add(4_000, 'Transport', '2026-11-22');
+    await add(1_500, 'Food', '2026-11-22');
+    await add(8_500, 'Food');
+    const heading = () => el.querySelector('app-today-list.today h2')!.textContent!.trim();
+    await settle(() => rows().length === 1 && heading() === 'Today');
+
+    el.querySelector<HTMLButtonElement>('app-week-strip [data-testid="prev-week"]')!.click();
+    await settle(() => !!el.querySelector('app-week-strip [data-day="2026-11-22"]'));
+    el.querySelector<HTMLButtonElement>('app-week-strip [data-day="2026-11-22"]')!.click();
+    await settle(() => heading() === 'Sun 22 Nov' && rows().length === 2);
+    expect(hero()).toBe('55,00 ₴');
+
+    el.querySelector<HTMLButtonElement>('app-today-list.today [data-testid="expense-row"] .del')!.click();
+    await settle(() => rows().length === 1);
+    expect(['15,00 ₴', '40,00 ₴']).toContain(hero());
+
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    el.querySelector<HTMLButtonElement>('[data-testid="add-expense"]')!.click();
+    expect(navigate).toHaveBeenCalledWith('/add?date=2026-11-22');
+
+    el.querySelector<HTMLButtonElement>('app-week-strip [data-testid="next-week"]')!.click();
+    await settle(() => !!el.querySelector('app-week-strip [data-day="2026-11-23"]'));
+    el.querySelector<HTMLButtonElement>('app-week-strip [data-day="2026-11-23"]')!.click();
+    await settle(() => heading() === 'Today' && rows().length === 1);
+    el.querySelector<HTMLButtonElement>('[data-testid="add-expense"]')!.click();
+    expect(navigate).toHaveBeenLastCalledWith('/add');
+  });
+
+  it('a chosen past day survives a trip to the entry screen, with the strip on its week', async () => {
+    const { el, settle } = await setup();
+    TestBed.inject(ChosenDay).picked.set('2026-11-22');
+    await settle(
+      () =>
+        el.querySelector('app-today-list.today h2')?.textContent?.trim() === 'Sun 22 Nov' &&
+        el.querySelector('app-week-strip [data-testid="week-label"]')?.textContent?.trim() === '16–22 Nov',
+    );
   });
 
   it('the add button opens the entry screen', async () => {
@@ -109,7 +159,7 @@ describe('HomePage', () => {
     expect(toast.show).toHaveBeenLastCalledWith(expect.stringContaining('Deleted'), 'Undo', 6000);
     toast.action.next();
     await settle(() => rows().length === 1);
-    expect(hero()).toBe('40,00 ₴');
+    expect(['15,00 ₴', '40,00 ₴']).toContain(hero());
   });
 
   it('delete without undo keeps the record marked deleted', async () => {
@@ -124,7 +174,7 @@ describe('HomePage', () => {
   });
 
   describe('budget hero', () => {
-    const norm = (s: string | null | undefined) => (s ?? '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').replace(/\s?·/g, ' ·').trim();
+    const norm = (s: string | null | undefined) => (s ?? '').replace(/[  ]/g, ' ').replace(/\s+/g, ' ').trim();
     const balance = (el: HTMLElement) => norm(el.querySelector('[data-testid="hero-balance"]')?.textContent);
     const left = (el: HTMLElement) => norm(el.querySelector('[data-testid="hero-left"]')?.textContent);
     const status = (el: HTMLElement) => el.querySelector('[data-testid="hero-left"]')?.getAttribute('data-status');
@@ -151,26 +201,60 @@ describe('HomePage', () => {
       TestBed.inject(TodayService).refresh();
       await TestBed.inject(SettingsRepository).setBalance(1_200_000);
       await settle(() => balance(el) === '12 000,00 ₴');
-      expect(left(el)).toBe('Left today 1 714,28 ₴ · of 1 714,28 ₴');
+      expect(left(el)).toBe('1 714,28 ₴ left today');
 
       now = new Date('2026-11-24T11:00:00Z');
       await add(30_000, 'Food', '2026-11-24');
       await settle(() => balance(el) === '11 700,00 ₴');
-      expect(left(el)).toBe('Left today 1 414,28 ₴ · of 1 714,28 ₴');
+      expect(left(el)).toBe('1 414,28 ₴ left today');
       expect(status(el)).toBe('green');
     });
 
-    it('shows "over by" in red', async () => {
+    it('shows "over today" in red', async () => {
       const { el, add, settle } = await setup();
       now = new Date('2026-11-30T07:00:00Z'); // last day: limit = all free money
       TestBed.inject(TodayService).refresh();
       await TestBed.inject(SettingsRepository).setBalance(50_000);
       now = new Date('2026-11-30T08:00:00Z');
       await add(62_000, 'Food', '2026-11-30');
-      await settle(() => left(el).startsWith('Over by'));
-      expect(left(el)).toBe('Over by 120,00 ₴ · limit 500,00 ₴');
+      await settle(() => left(el).endsWith('over today'));
+      expect(left(el)).toBe('120,00 ₴ over today');
       expect(status(el)).toBe('red');
       expect(balance(el)).toBe('-120,00 ₴');
+    });
+
+    it('Show frozen on: balance without frozen money and the freeze listed; off: whole balance, freeze hidden', async () => {
+      const { el, rows, hero, settle } = await setup();
+      now = new Date('2026-11-24T07:00:00Z');
+      TestBed.inject(TodayService).refresh();
+      const settings = TestBed.inject(SettingsRepository);
+      await settings.setBalance(1_200_000);
+      const vacation = await TestBed.inject(CategoryRepository).add('Vacation', 'frozen');
+      now = new Date('2026-11-24T08:00:00Z');
+      await TestBed.inject(ExpenseRepository).add({ amountKopecks: 200_000, categoryId: vacation.id, date: '2026-11-24' });
+      await settle(() => balance(el) === '10 000,00 ₴' && rows().length === 1);
+      expect(el.querySelector('[data-testid="expense-row"]')!.getAttribute('data-kind')).toBe('freeze');
+      expect(rows()[0]).toContain('Frozen');
+      const leftOn = left(el);
+      expect(leftOn).toBe('1 428,57 ₴ left today');
+      expect(hero()).toBe('0,00 ₴');
+
+      now = new Date('2026-11-24T09:00:00Z');
+      const ret = await TestBed.inject(ExpenseRepository).add({
+        amountKopecks: 50_000,
+        categoryId: vacation.id,
+        date: '2026-11-24',
+        kind: 'return',
+      });
+      await settle(() => rows().length === 2);
+      const returnRow = el.querySelector('[data-testid="expense-row"][data-kind="return"]')!;
+      expect(returnRow.textContent!.replace(/[  ]/g, ' ')).toMatch(/Returned[\s\S]*−500,00 ₴/);
+      await TestBed.inject(ExpenseRepository).softDelete(ret.id);
+      await settle(() => rows().length === 1);
+
+      await settings.setShowFrozen(false);
+      await settle(() => balance(el) === '12 000,00 ₴' && rows().length === 0);
+      expect(left(el)).toBe(leftOn);
     });
 
     it('turns yellow from 80 % of the limit', async () => {

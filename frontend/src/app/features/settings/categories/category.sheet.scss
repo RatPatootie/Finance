@@ -1,0 +1,124 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+h2 {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// 16px keeps iOS Safari from zooming the page on focus.
+input {
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-large);
+  font-size: 16px;
+
+  &:focus {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -1px;
+    border-color: transparent;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--mat-sys-error);
+  }
+}
+
+.error {
+  margin: -4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+}
+
+.types {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 18px;
+  background: var(--mat-sys-surface-container-high);
+
+  button {
+    height: 40px;
+    border: 0;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-label-large);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    &[aria-checked='true'] {
+      background: var(--mat-sys-surface);
+      color: var(--mat-sys-on-surface);
+    }
+  }
+}
+
+.hint,
+.type-fixed {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.btn {
+  min-width: 80px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 22px;
+  border: 0;
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.text {
+  background: transparent;
+  color: var(--mat-sys-primary);
+}
+
+.danger {
+  background: transparent;
+  color: var(--mat-sys-error);
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.filled {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+
+  &:disabled {
+    opacity: 0.38;
+  }
+}

@@ -3,11 +3,15 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { CLOCK } from '../../core/date/clock';
+import { CategoryRepository } from '../../core/db/category.repository';
+import { ExpenseRepository } from '../../core/db/expense.repository';
 import { FinanceDb } from '../../core/db/finance-db';
 import { SettingsRepository } from '../../core/db/settings.repository';
 import { provideTestDb, until } from '../../core/db/testing';
 import { Toast } from '../../core/ui/toast';
 import { AmountSheet } from './amount.sheet';
+import { CategorySheet } from './categories/category.sheet';
+import { RemoveCategorySheet } from './categories/remove-category.sheet';
 import { PaydaySheet } from './payday.sheet';
 import { SettingsPage } from './settings.page';
 
@@ -57,7 +61,7 @@ describe('SettingsPage', () => {
         throw new Error('waitStored(): timed out');
       })();
     await settle(() => text('row-payday') !== '');
-    return { text, settle, tap, stored, waitStored };
+    return { el, text, settle, tap, stored, waitStored };
   }
 
   it('shows "Not set", income 0 and payday 1 before set-up', async () => {
@@ -107,5 +111,82 @@ describe('SettingsPage', () => {
     expect(open).toHaveBeenCalledWith(PaydaySheet, expect.objectContaining({ data: 1 }));
     await waitStored((s) => s.payday === 25);
     await settle(() => text('row-payday') === 'Day 25');
+  });
+
+  describe('categories', () => {
+    const seed = async () => {
+      const repo = TestBed.inject(CategoryRepository);
+      await repo.seedDefaultsIfEmpty();
+      return repo;
+    };
+    const rows = (el: HTMLElement) =>
+      [...el.querySelectorAll('[data-testid="category-row"]')].map(
+        (r) => `${r.querySelector('.name')!.textContent!.trim()} ${r.querySelector('.tag')!.textContent!.trim()}`,
+      );
+
+    it('lists the categories in order with their type', async () => {
+      const { el, settle } = await setup();
+      const repo = await seed();
+      await repo.add('Vacation', 'frozen');
+      await settle(() => rows(el).length === 6);
+      expect(rows(el)).toEqual(['Food Normal', 'Transport Normal', 'Health Normal', 'Shopping Normal', 'Fun Normal', 'Vacation Frozen']);
+    });
+
+    it('Add category opens the category sheet', async () => {
+      const { tap } = await setup();
+      sheetResult = 'added';
+      tap('add-category');
+      expect(open).toHaveBeenCalledWith(CategorySheet, expect.objectContaining({ data: {} }));
+    });
+
+    it('Remove from the edit sheet opens the remove dialog with the record count', async () => {
+      const { el, settle } = await setup();
+      const repo = await seed();
+      await settle(() => rows(el).length === 5);
+      const fun = repo.listed().find((c) => c.name === 'Fun')!;
+      const expenses = TestBed.inject(ExpenseRepository);
+      for (let i = 0; i < 2; i++) await expenses.add({ amountKopecks: 100, categoryId: fun.id, date: '2026-11-24' });
+      open.mockReturnValueOnce({ afterDismissed: () => of('remove') });
+      open.mockReturnValueOnce({ afterDismissed: () => of(undefined) });
+      [...el.querySelectorAll<HTMLButtonElement>('[data-testid="category-row"]')][4].click();
+      await until(
+        () => open.mock.calls.length,
+        (n) => n === 2,
+      );
+      expect(open.mock.calls[0][0]).toBe(CategorySheet);
+      expect(open.mock.calls[1][0]).toBe(RemoveCategorySheet);
+      expect(open.mock.calls[1][1].data).toEqual({ category: expect.objectContaining({ name: 'Fun' }), count: 2 });
+    });
+  });
+
+  describe('frozen money', () => {
+    it('lists frozen categories with totals; Return takes up to the total and records a return', async () => {
+      const { el, settle } = await setup((r) => r.setBalance(1_200_000));
+      const categories = TestBed.inject(CategoryRepository);
+      await categories.seedDefaultsIfEmpty();
+      const vacation = await categories.add('Vacation', 'frozen');
+      await TestBed.inject(ExpenseRepository).add({ amountKopecks: 200_000, categoryId: vacation.id, date: '2026-11-24' });
+      const row = () => el.querySelector<HTMLButtonElement>('[data-testid="frozen-row"]');
+      await settle(() => !!row() && row()!.textContent!.replace(/[\u00a0\u202f]/g, ' ').includes('2 000,00 ₴'));
+      sheetResult = 50_000;
+      row()!.click();
+      expect(open).toHaveBeenCalledWith(AmountSheet, expect.objectContaining({ data: expect.objectContaining({ max: 200_000 }) }));
+      await until(
+        async () => (await db.expenses.toArray()).length,
+        () => true,
+      );
+      await settle(() => row()!.textContent!.replace(/[\u00a0\u202f]/g, ' ').includes('1 500,00 ₴'));
+      const ret = (await db.expenses.toArray()).find((e) => e.kind === 'return')!;
+      expect(ret).toMatchObject({ amountKopecks: 50_000, categoryId: vacation.id, date: '2026-11-24' });
+    });
+
+    it('the Show frozen switch is on by default and turns off', async () => {
+      const { tap, el, settle, waitStored } = await setup();
+      const sw = () => el.querySelector('[data-testid="toggle-show-frozen"]')!;
+      await settle(() => sw().getAttribute('aria-checked') === 'true');
+      tap('toggle-show-frozen');
+      await waitStored((s) => s.showFrozen === false);
+      await settle(() => sw().getAttribute('aria-checked') === 'false');
+    });
   });
 });

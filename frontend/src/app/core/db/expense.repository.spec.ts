@@ -30,6 +30,19 @@ describe('ExpenseRepository', () => {
     });
   });
 
+  it('between$ lists non-deleted records in the date range, newest first', async () => {
+    const { repo } = setup();
+    await repo.add({ amountKopecks: 100, categoryId: 'a', date: '2026-11-22' });
+    const mon = await repo.add({ amountKopecks: 200, categoryId: 'a', date: '2026-11-23' });
+    now = new Date('2026-11-23T11:00:00Z');
+    const sun = await repo.add({ amountKopecks: 300, categoryId: 'a', date: '2026-11-29' });
+    const gone = await repo.add({ amountKopecks: 400, categoryId: 'a', date: '2026-11-25' });
+    await repo.add({ amountKopecks: 500, categoryId: 'a', date: '2026-11-30' });
+    await repo.softDelete(gone.id);
+    const list = await waitFor(repo.between$('2026-11-23', '2026-11-29'), (l) => l.length === 2);
+    expect(list.map((e) => e.id)).toEqual([sun.id, mon.id]);
+  });
+
   it('rejects zero, negative and fractional amounts', async () => {
     const { repo } = setup();
     await expect(repo.add({ amountKopecks: 0, categoryId: 'x', date: '2026-11-23' })).rejects.toThrow();
