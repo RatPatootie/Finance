@@ -12,14 +12,31 @@
     @if (budget(); as b) {
       <p class="label">Balance</p>
       <p class="figure" data-testid="hero-balance">{{ money(shownBalance()) }}</p>
-      <p class="left" [class]="'status-' + b.status" data-testid="hero-left" [attr.data-status]="b.status">
-        <span class="dot" aria-hidden="true"></span>
-        @if (b.left >= 0) {
-          <span><strong>{{ money(b.left) }}</strong> left today</span>
-        } @else {
-          <span><strong>{{ money(-b.left) }}</strong> over today</span>
-        }
-      </p>
+      @if (b.left !== null && b.status !== null) {
+        <p class="left" [class]="'status-' + b.status" data-testid="hero-left" [attr.data-status]="b.status">
+          <span class="dot" aria-hidden="true"></span>
+          @if (b.left >= 0) {
+            <span><strong>{{ money(b.left) }}</strong> left today</span>
+          } @else {
+            <span><strong>{{ money(-b.left) }}</strong> over today</span>
+          }
+        </p>
+        <div class="usage" [class]="'status-' + b.status" data-testid="usage">
+          <div
+            class="track"
+            role="progressbar"
+            [attr.aria-label]="money(b.spentToday) + ' of ' + money(b.limit ?? 0) + ' used today'"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="usedPercent()"
+          >
+            <div class="fill" data-testid="usage-fill" [style.width.%]="usedPercent()"></div>
+          </div>        </div>
+      } @else {
+        <button type="button" class="share-prompt" data-testid="setup-share" (click)="openSettings()">
+          Set your daily share of income to see what's left today
+        </button>
+      }
     } @else if (budget() === null) {
       <button type="button" class="setup" data-testid="setup-balance" (click)="openSettings()">
         <span class="setup-title">Set your balance</span>
@@ -43,16 +60,16 @@
     </button>
   </div>
 
+  <app-week-strip class="week" [selected]="day()" (selectedChange)="pickDay($event)" />
+
   <app-today-list
     class="today"
     [heading]="listHeading()"
     [emptyText]="emptyText()"
-    [expenses]="listed()"
+    [expenses]="dayExpenses()"
     [total]="dayTotal()"
     [limit]="3"
     (edit)="onEdit($event)"
     (remove)="onDelete($event)"
   />
-
-  <app-week-strip class="week" [selected]="day()" (selectedChange)="pickDay($event)" />
 </main>

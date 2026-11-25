@@ -1,5 +1,5 @@
 import { BudgetSettings, DEFAULT_SETTINGS, Expense } from '../db/models';
-import { computeBudget, dayBudget, daysLeftInMonth, dayState, frozenTotals, isCounted, paydaysBetween } from './budget';
+import { computeBudget, dailyLimit, daysLeftInMonth, dayState, frozenTotals, isCounted, paydaysBetween, spentOn } from './budget';
 
 const settings = (s: Partial<BudgetSettings> = {}): BudgetSettings => ({
   ...DEFAULT_SETTINGS,
@@ -72,75 +72,84 @@ describe('isCounted', () => {
   });
 });
 
+
+const share = (s: Partial<BudgetSettings> = {}) => settings({ monthlyIncomeKopecks: 3_000_000, dailySharePercent: 40, ...s });
+
+describe('dailyLimit', () => {
+  it.each([
+    ['2026-11-24', 40_000],
+    ['2026-12-05', 38_709],
+    ['2027-02-10', 42_857],
+    ['2028-02-10', 41_379],
+  ])('30 000 x 40 %% on %s -> %i kopecks', (day, limit) => expect(dailyLimit(share(), day)).toBe(limit));
+
+  it('is null until a share is set, 0 with no income', () => {
+    expect(dailyLimit(settings({ monthlyIncomeKopecks: 3_000_000 }), '2026-11-24')).toBeNull();
+    expect(dailyLimit(share({ monthlyIncomeKopecks: 0 }), '2026-11-24')).toBe(0);
+  });
+});
+
+describe('spentOn', () => {
+  it('adds non-deleted, non-frozen records of that day only', () => {
+    const frozen = { ...exp(9_000, '2026-11-24'), categoryId: 'vac' };
+    const records = [exp(1_000, '2026-11-24'), exp(2_000, '2026-11-24', undefined, 1), exp(4_000, '2026-11-23'), frozen];
+    expect(spentOn('2026-11-24', records, new Set(['vac']))).toBe(1_000);
+  });
+});
+
 describe('computeBudget', () => {
   it('is null until a balance is set', () => {
     expect(computeBudget(DEFAULT_SETTINGS, [], '2026-11-24')).toBeNull();
   });
 
-  it('spreads 12 000 over 7 days: limit 1 714,28', () => {
+  it('has a balance but no limit until a share is set', () => {
     expect(computeBudget(settings(), [], '2026-11-24')).toEqual({
       balance: 1_200_000,
       frozen: 0,
-      limit: 171_428,
+      limit: null,
       spentToday: 0,
-      left: 171_428,
-      status: 'green',
+      left: null,
+      status: null,
     });
   });
 
-  it('subtracts spending from the balance but keeps today’s limit', () => {
-    const b = computeBudget(settings(), [exp(30_000, '2026-11-24')], '2026-11-24')!;
-    expect(b).toMatchObject({ balance: 1_170_000, limit: 171_428, spentToday: 30_000, left: 141_428, status: 'green' });
+  it('limit from income; spending today lowers left but not the limit', () => {
+    const b = computeBudget(share(), [exp(15_000, '2026-11-24')], '2026-11-24')!;
+    expect(b).toMatchObject({ balance: 1_185_000, limit: 40_000, spentToday: 15_000, left: 25_000, status: 'green' });
   });
 
-  it('does not subtract expenses already in the saved balance', () => {
-    const b = computeBudget(settings(), [exp(8_500, '2026-11-24', '2026-11-24T06:00:00.000Z')], '2026-11-24')!;
-    expect(b.balance).toBe(1_200_000);
-    expect(b.spentToday).toBe(0);
+  it('the balance does not change the limit, even when negative', () => {
+    const b = computeBudget(share({ balanceKopecks: -500_000 }), [], '2026-11-24')!;
+    expect(b).toMatchObject({ balance: -500_000, limit: 40_000, left: 40_000 });
   });
 
-  it('subtracts a backdated expense after the anchor day and lowers today’s start money', () => {
-    const s = settings({ balanceDate: '2026-11-20', balanceSetAt: '2026-11-20T07:00:00.000Z' });
+  it('spending recorded before the balance still counts for today, not for the balance', () => {
+    const early = exp(10_000, '2026-11-24', '2026-11-24T06:00:00.000Z');
+    const b = computeBudget(share(), [early], '2026-11-24')!;
+    expect(b).toMatchObject({ balance: 1_200_000, spentToday: 10_000, left: 30_000 });
+  });
+
+  it('subtracts a backdated expense after the anchor day from the balance', () => {
+    const s = share({ balanceDate: '2026-11-20', balanceSetAt: '2026-11-20T07:00:00.000Z' });
     const b = computeBudget(s, [exp(10_000, '2026-11-22', '2026-11-24T10:00:00.000Z')], '2026-11-24')!;
-    expect(b.balance).toBe(1_190_000);
-    expect(b.limit).toBe(Math.floor(1_190_000 / 7));
+    expect(b).toMatchObject({ balance: 1_190_000, spentToday: 0, limit: 40_000 });
   });
 
-  it('adds income on payday', () => {
-    const s = settings({ balanceKopecks: 1_000_000, monthlyIncomeKopecks: 3_000_000, payday: 25 });
+  it('adds income on payday to the balance', () => {
+    const s = share({ balanceKopecks: 1_000_000, payday: 25 });
     expect(computeBudget(s, [], '2026-11-24')!.balance).toBe(1_000_000);
-    const b = computeBudget(s, [], '2026-11-25')!;
-    expect(b.balance).toBe(4_000_000);
-    expect(b.limit).toBe(Math.floor(4_000_000 / 6));
-  });
-
-  it('last day of the month: the whole free money', () => {
-    const s = settings({ balanceKopecks: 50_000, balanceDate: '2026-11-30', balanceSetAt: '2026-11-30T07:00:00.000Z' });
-    expect(computeBudget(s, [], '2026-11-30')!.limit).toBe(50_000);
-  });
-
-  it('first day of a new month: 31 days', () => {
-    const s = settings({ balanceKopecks: 310_000, balanceDate: '2026-11-30', balanceSetAt: '2026-11-30T07:00:00.000Z' });
-    expect(computeBudget(s, [], '2026-12-01')!.limit).toBe(10_000);
-  });
-
-  it('negative free money gives limit 0 and red', () => {
-    const s = settings({ balanceKopecks: 0 });
-    const neg = computeBudget(s, [exp(20_000, '2026-11-25', '2026-11-25T08:00:00.000Z')], '2026-11-26')!;
-    expect(neg).toMatchObject({ balance: -20_000, limit: 0, left: 0, status: 'red' });
+    expect(computeBudget(s, [], '2026-11-25')!.balance).toBe(4_000_000);
   });
 
   it('over the limit: left is negative and red', () => {
-    const s = settings({ balanceKopecks: 50_000, balanceDate: '2026-11-30', balanceSetAt: '2026-11-30T07:00:00.000Z' });
-    const b = computeBudget(s, [exp(62_000, '2026-11-30', '2026-11-30T08:00:00.000Z')], '2026-11-30')!;
-    expect(b).toMatchObject({ limit: 50_000, left: -12_000, status: 'red' });
+    const b = computeBudget(share(), [exp(52_000, '2026-11-24')], '2026-11-24')!;
+    expect(b).toMatchObject({ limit: 40_000, left: -12_000, status: 'red' });
   });
 
   describe('status boundaries with a 1 000,00 limit', () => {
-    // 1 000 on the last day of the month -> limit 100 000 kopecks.
-    const s = settings({ balanceKopecks: 100_000, balanceDate: '2026-11-30', balanceSetAt: '2026-11-30T07:00:00.000Z' });
-    const status = (spent: number) =>
-      computeBudget(s, [exp(spent, '2026-11-30', '2026-11-30T08:00:00.000Z')], '2026-11-30')!.status;
+    const s = share({ monthlyIncomeKopecks: 7_500_000 });
+    const status = (spent: number) => computeBudget(s, [exp(spent, '2026-11-24')], '2026-11-24')!.status;
+    it('the limit is 1 000,00', () => expect(computeBudget(s, [], '2026-11-24')!.limit).toBe(100_000));
     it.each([
       [79_999, 'green'],
       [80_000, 'yellow'],
@@ -149,8 +158,8 @@ describe('computeBudget', () => {
     ])('spent %i -> %s', (spent, expected) => expect(status(spent)).toBe(expected));
   });
 
-  it('limit 0 with nothing spent is red', () => {
-    expect(computeBudget(settings({ balanceKopecks: 0 }), [], '2026-11-24')!.status).toBe('red');
+  it('limit 0 (no income) with nothing spent is red', () => {
+    expect(computeBudget(share({ monthlyIncomeKopecks: 0 }), [], '2026-11-24')!.status).toBe('red');
   });
 });
 
@@ -182,50 +191,28 @@ describe('frozen money', () => {
     expect(frozenTotals([rec(10_000, '2026-11-20'), rec(30_000, '2026-11-21', 'return')], ids, '2026-11-24').total).toBe(0);
   });
 
-  it('a freeze does not change the balance or spending; it lowers the limit', () => {
+  it('a freeze changes neither the balance, today’s spending nor the limit', () => {
     const freeze = rec(200_000, '2026-11-24');
-    const b = computeBudget(settings(), [freeze], '2026-11-24', { ids, total: 200_000 })!;
-    expect(b).toMatchObject({ balance: 1_200_000, frozen: 200_000, spentToday: 0, limit: 142_857 });
-  });
-
-  it('returning the money brings the limit back', () => {
-    const records = [rec(200_000, '2026-11-24'), rec(200_000, '2026-11-24', 'return')];
-    const total = frozenTotals(records, ids, '2026-11-24').total;
-    expect(computeBudget(settings(), records, '2026-11-24', { ids, total })!.limit).toBe(171_428);
+    const b = computeBudget(share(), [freeze], '2026-11-24', { ids, total: 200_000 })!;
+    expect(b).toMatchObject({ balance: 1_200_000, frozen: 200_000, spentToday: 0, limit: 40_000, left: 40_000 });
   });
 });
 
-describe('day budget and state', () => {
+describe('dayState', () => {
   const none = new Set<string>();
-  const s = settings({ balanceKopecks: 100_000, balanceDate: '2026-11-29', balanceSetAt: '2026-11-29T07:00:00.000Z' });
   const at = (date: string, amount: number) => exp(amount, date, `${date}T08:00:00.000Z`);
 
-  it('the balance day itself uses the same rule as today: 12 000 on 24 Nov -> 1 714,28', () => {
-    expect(dayBudget(settings(), [], '2026-11-24', none, [])!.limit).toBe(171_428);
-  });
-
-  it('a past day ignores records dated after it', () => {
-    const records = [at('2026-11-29', 20_000), at('2026-11-30', 90_000)];
-    const sun = dayBudget(s, records, '2026-11-29', none, [])!;
-    expect(sun).toMatchObject({ limit: 50_000, spentToday: 20_000, left: 30_000 });
-  });
-
-  it('within, equal and over the limit; no records; before the balance day', () => {
-    const records = [at('2026-11-29', 50_000), at('2026-11-30', 60_000)];
-    const sun = dayBudget(s, records, '2026-11-29', none, []);
-    const mon = dayBudget(s, records, '2026-11-30', none, []);
-    expect(dayState([records[0]], sun, none)).toBe('ok');
-    expect(dayState([records[1]], mon, none)).toBe('over');
-    expect(dayState([], sun, none)).toBe('none');
-    const before = dayBudget(s, [], '2026-11-20', none, []);
-    expect(before).toBeNull();
-    expect(dayState([at('2026-11-20', 100)], before, none)).toBe('unknown');
+  it('within, equal and over the limit; no spending; no share', () => {
+    expect(dayState([at('2026-11-20', 40_000)], 40_000, none)).toBe('ok');
+    expect(dayState([at('2026-11-20', 30_000), at('2026-11-20', 10_001)], 40_000, none)).toBe('over');
+    expect(dayState([], 40_000, none)).toBe('none');
+    expect(dayState([at('2026-11-20', 100)], null, none)).toBe('unknown');
   });
 
   it('a day with only frozen or deleted records counts as none', () => {
     const ids = new Set(['vac']);
     const freeze = { ...at('2026-11-29', 10_000), categoryId: 'vac' };
     const deleted = { ...at('2026-11-29', 10_000), isDeleted: 1 as const };
-    expect(dayState([freeze, deleted], dayBudget(s, [], '2026-11-29', ids, [freeze]), ids)).toBe('none');
+    expect(dayState([freeze, deleted], 40_000, ids)).toBe('none');
   });
 });

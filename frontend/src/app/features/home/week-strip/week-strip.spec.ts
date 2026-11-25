@@ -62,26 +62,29 @@ describe('WeekStrip', () => {
     await settle(() => label() === '26 Oct – 1 Nov');
   });
 
-  it('colours days within and over the limit, plain without records', async () => {
+  it('colours days within and over the income-based limit, plain without records', async () => {
     const { settle, state, add, settings } = await setup();
-    now = new Date('2026-11-23T05:00:00Z');
-    await settings.setBalance(400_000);
+    await settings.setMonthlyIncome(3_000_000);
+    await settings.setDailyShare(40);
     now = new Date('2026-11-23T08:00:00Z');
     await add(20_000, '2026-11-23');
     now = new Date('2026-11-24T08:00:00Z');
     TestBed.inject(TodayService).refresh();
-    await add(62_000, '2026-11-24');
+    await add(42_000, '2026-11-24');
     await settle(() => state('2026-11-23') === 'ok' && state('2026-11-24') === 'over');
     expect(state('2026-11-25')).toBe('none');
   });
 
-  it('marks days before the balance was set as unknown', async () => {
+  it('neutral without a daily share; days before the balance get a colour once it is set', async () => {
     const { settle, state, add, settings, tap, label } = await setup();
     now = new Date('2026-11-24T05:00:00Z');
     await settings.setBalance(400_000);
     await add(10_000, '2026-11-20');
     tap('prev-week');
     await settle(() => label() === '16–22 Nov' && state('2026-11-20') === 'unknown');
+    await settings.setMonthlyIncome(3_000_000);
+    await settings.setDailyShare(40);
+    await settle(() => state('2026-11-20') === 'ok');
   });
 
   it('future days are dimmed and a tap on them selects nothing', async () => {

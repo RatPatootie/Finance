@@ -6,10 +6,10 @@ export type BudgetStatus = 'green' | 'yellow' | 'red';
 export interface Budget {
   balance: number;
   frozen: number;
-  limit: number;
+  limit: number | null;
   spentToday: number;
-  left: number;
-  status: BudgetStatus;
+  left: number | null;
+  status: BudgetStatus | null;
 }
 
 export interface FrozenInfo {
@@ -86,55 +86,59 @@ export function isCounted(expense: Expense, settings: BudgetSettings): boolean {
   return expense.date === settings.balanceDate && expense.createdAt >= settings.balanceSetAt;
 }
 
+export function dailyLimit(settings: Pick<BudgetSettings, 'monthlyIncomeKopecks' | 'dailySharePercent'>, day: DateKey): number | null {
+  const share = settings.dailySharePercent;
+  if (share === undefined || share === null) return null;
+  const [y, m] = parts(day);
+  return Math.floor((settings.monthlyIncomeKopecks * share) / (100 * daysInMonth(y, m)));
+}
+
+export function spentOn(day: DateKey, records: readonly Expense[], frozenIds: ReadonlySet<string>): number {
+  let sum = 0;
+  for (const r of records) {
+    if (!r.isDeleted && r.date === day && !frozenIds.has(r.categoryId)) sum += r.amountKopecks;
+  }
+  return sum;
+}
+
+export function spendingStatus(limit: number, spent: number): BudgetStatus {
+  if (limit <= 0 || spent > limit) return 'red';
+  if (spent * YELLOW_DEN >= limit * YELLOW_NUM) return 'yellow';
+  return 'green';
+}
+
 export function computeBudget(
   settings: BudgetSettings,
   expenses: readonly Expense[],
   today: DateKey,
   frozen: FrozenInfo = NO_FROZEN,
+  todayRecords: readonly Expense[] = expenses,
 ): Budget | null {
   if (settings.balanceKopecks === null || settings.balanceDate === null) return null;
 
-  let spentAll = 0;
-  let spentToday = 0;
+  let spentSinceBalance = 0;
   for (const e of expenses) {
     if (frozen.ids.has(e.categoryId) || !isCounted(e, settings)) continue;
-    spentAll += e.amountKopecks;
-    if (e.date === today) spentToday += e.amountKopecks;
+    spentSinceBalance += e.amountKopecks;
   }
-
   const income = settings.monthlyIncomeKopecks * paydaysBetween(settings.balanceDate, today, settings.payday);
-  const balance = settings.balanceKopecks + income - spentAll;
+  const balance = settings.balanceKopecks + income - spentSinceBalance;
 
-  // The limit comes from the money at the start of today, so spending during the day doesn't shrink it.
-  const freeAtStartOfDay = balance + spentToday - frozen.total;
-  const limit = freeAtStartOfDay > 0 ? Math.floor(freeAtStartOfDay / daysLeftInMonth(today)) : 0;
-  const left = limit - spentToday;
-
-  let status: BudgetStatus;
-  if (limit <= 0 || left < 0) status = 'red';
-  else if (spentToday * YELLOW_DEN >= limit * YELLOW_NUM) status = 'yellow';
-  else status = 'green';
+  // Today's spending is not tied to the balance anchor: anything dated today counts against the limit.
+  const spentToday = spentOn(today, todayRecords, frozen.ids);
+  const limit = dailyLimit(settings, today);
+  const left = limit === null ? null : limit - spentToday;
+  const status = limit === null ? null : spendingStatus(limit, spentToday);
 
   return { balance, frozen: frozen.total, limit, spentToday, left, status };
 }
 
 export type DayState = 'none' | 'ok' | 'over' | 'unknown';
 
-export function dayBudget(
-  settings: BudgetSettings,
-  expenses: readonly Expense[],
-  day: DateKey,
-  frozenIds: ReadonlySet<string>,
-  frozenRecords: readonly Expense[],
-): Budget | null {
-  if (settings.balanceDate === null || day < settings.balanceDate) return null;
-  const upToDay = expenses.filter((e) => e.date <= day);
-  return computeBudget(settings, upToDay, day, { ids: frozenIds, total: frozenTotals(frozenRecords, frozenIds, day).total });
-}
-
-export function dayState(dayRecords: readonly Expense[], budget: Budget | null, frozenIds: ReadonlySet<string>): DayState {
+export function dayState(dayRecords: readonly Expense[], limit: number | null, frozenIds: ReadonlySet<string>): DayState {
   const spends = dayRecords.some((e) => !e.isDeleted && !frozenIds.has(e.categoryId));
   if (!spends) return 'none';
-  if (!budget) return 'unknown';
-  return budget.left < 0 ? 'over' : 'ok';
+  if (limit === null) return 'unknown';
+  const day = dayRecords[0].date;
+  return spentOn(day, dayRecords, frozenIds) > limit ? 'over' : 'ok';
 }

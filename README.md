@@ -10,10 +10,10 @@ Done:
 - Add an expense in 2 steps: type the amount, tap a category, and it's saved (the date defaults to today in Kyiv time; you can pick a past day)
 - Today's expenses with a day total (the 3 newest on the home screen, with Show all); tap one to edit it, or delete it with Undo
 - Categories: five to start with (Food, Transport, Health, Shopping, Fun); add, rename and remove them in Settings, and removing one moves its records to another category or to "Other"
-- Frozen categories set money aside: it is left out of the daily limit until you return it in Settings; a "Show frozen" switch shows or hides it
+- Frozen categories set money aside: frozen records are always listed on their day, never count as spending, and are kept out of the balance shown on the home screen; you can return them in Settings
 - Week strip on the home screen: 7 days coloured by spending (green within the limit, red over it), arrows to switch weeks; tap a day to show and edit its records in the main list (the add button then adds to that day)
-- Home screen with your balance and how much is left for today (green, yellow at 80 % of the daily limit, red when over)
-- Settings: current balance, monthly income and payday, typed on a keypad with + − × ÷ = so you can add up several accounts; new expenses come off the balance and income is added on payday
+- Home screen, top to bottom: your balance and how much is left for today (green, yellow at 80 % of the daily limit, red when over), the add button, the week strip and the chosen day's list
+- Settings: current balance, monthly income, payday and the daily share of income (the % of income for everyday spending), typed on a keypad (balance and income also with + − × ÷ = so you can add up several accounts); new expenses come off the balance and income is added on payday
 - Works fully offline; data is stored on the device (IndexedDB)
 
 > On iPhone, use **Share → Add to Home Screen**. Safari can clear the data of websites you haven't opened for a while, and an installed app is kept safer. Backend sync (planned) will be the real backup.
@@ -26,9 +26,9 @@ Planned:
 
 | Value | Formula |
 |---|---|
-| Free money | balance − frozen amounts |
-| Daily limit | free money ÷ days left in the month (including today) |
-| Left for today | daily limit − spent today |
+| Shown balance | balance − frozen amounts |
+| Daily limit | monthly income × daily share % ÷ days in the current month (rounded down to kopecks) |
+| Left for today | daily limit − spent today (frozen records are not spending) |
 | Forecast | average daily spend over the last 7 days × days left |
 | Status | green / yellow / red |
 

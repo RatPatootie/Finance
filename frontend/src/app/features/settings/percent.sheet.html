@@ -1,0 +1,16 @@
+<div class="sheet">
+  <h2>{{ data.title }}</h2>
+  <p class="hint">Part of your monthly income for everyday spending. It is split over the days of the month.</p>
+  <output class="value" aria-live="polite">
+    <span data-testid="percent" [class.empty]="!digits()">{{ digits() || '0' }}</span>
+    <span class="unit">%</span>
+  </output>
+  @if (error()) {
+    <p class="error" role="alert" data-testid="percent-error">{{ error() }}</p>
+  }
+  <app-keypad (press)="onKey($event)" />
+  <div class="actions">
+    <button type="button" class="btn text" data-testid="cancel-percent" (click)="cancel()">Cancel</button>
+    <button type="button" class="btn filled" data-testid="save-percent" [disabled]="!canSave()" (click)="save()">Save</button>
+  </div>
+</div>

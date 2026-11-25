@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { AmountSheet, AmountSheetData } from './amount.sheet';
 import { PaydaySheet } from './payday.sheet';
+import { PercentSheet } from './percent.sheet';
 
 function create<T>(component: Type<T>, data: unknown) {
   const dismiss = vi.fn();
@@ -103,6 +104,44 @@ describe('AmountSheet', () => {
     const { el, dismiss } = create(AmountSheet, { title: 'Monthly income', kopecks: 0 });
     el.querySelector<HTMLButtonElement>('[data-testid="save-amount"]')!.click();
     expect(dismiss).toHaveBeenCalledWith(0);
+  });
+});
+
+describe('PercentSheet', () => {
+  const press = (el: HTMLElement, keys: string) => {
+    for (const k of keys) el.querySelector<HTMLButtonElement>(`[data-key="${k === '<' ? 'back' : k}"]`)!.click();
+  };
+  const shown = (el: HTMLElement) => el.querySelector('[data-testid="percent"]')!.textContent!.trim();
+
+  it('saves a whole percent typed on the keypad; the separator is ignored', async () => {
+    const { el, fixture, dismiss } = create(PercentSheet, { title: 'Daily share of income', percent: null });
+    press(el, '4.0');
+    await fixture.whenStable();
+    expect(shown(el)).toBe('40');
+    el.querySelector<HTMLButtonElement>('[data-testid="save-percent"]')!.click();
+    expect(dismiss).toHaveBeenCalledWith(40);
+  });
+
+  it('blocks 0 and values over 100, allows 100', async () => {
+    const { el, fixture, dismiss } = create(PercentSheet, { title: 'Daily share of income', percent: null });
+    const save = () => el.querySelector<HTMLButtonElement>('[data-testid="save-percent"]')!;
+    press(el, '0');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-testid="percent-error"]')).not.toBeNull();
+    expect(save().disabled).toBe(true);
+    press(el, '150');
+    await fixture.whenStable();
+    expect(shown(el)).toBe('150');
+    expect(save().disabled).toBe(true);
+    press(el, '<<<100');
+    await fixture.whenStable();
+    save().click();
+    expect(dismiss).toHaveBeenCalledWith(100);
+  });
+
+  it('is prefilled with the current share', () => {
+    const { el } = create(PercentSheet, { title: 'Daily share of income', percent: 25 });
+    expect(shown(el)).toBe('25');
   });
 });
 

@@ -7,7 +7,7 @@ import { CategoryRepository } from '../db/category.repository';
 import { ExpenseRepository } from '../db/expense.repository';
 import { categoryType, Expense } from '../db/models';
 import { SettingsRepository } from '../db/settings.repository';
-import { Budget, computeBudget, dayBudget, FrozenTotals, frozenTotals } from './budget';
+import { Budget, computeBudget, dailyLimit, FrozenTotals, frozenTotals } from './budget';
 
 @Injectable({ providedIn: 'root' })
 export class BudgetService {
@@ -44,6 +44,10 @@ export class BudgetService {
     ),
   );
 
+  private readonly todayRecords: Signal<Expense[] | undefined> = toSignal(
+    toObservable(this.today).pipe(switchMap((day) => this.expenses.forDate$(day))),
+  );
+
   // undefined while loading, so no wrong figure flashes; null when no balance is set yet.
   readonly budget: Signal<Budget | null | undefined> = computed(() => {
     const settings = this.settingsRepo.settings();
@@ -51,17 +55,15 @@ export class BudgetService {
     if (settings.balanceKopecks === null) return null;
     const expenses = this.sinceAnchor();
     const frozen = this.frozen();
-    if (!expenses || !frozen) return undefined;
-    return computeBudget(settings, expenses, this.today(), { ids: this.frozenIds(), total: frozen.total });
+    const todayRecords = this.todayRecords();
+    if (!expenses || !frozen || !todayRecords) return undefined;
+    return computeBudget(settings, expenses, this.today(), { ids: this.frozenIds(), total: frozen.total }, todayRecords);
   });
 
-  forDay(day: DateKey): Budget | null | undefined {
+  readonly hasDailyShare = computed(() => this.settingsRepo.settings()?.dailySharePercent !== undefined);
+
+  limitFor(day: DateKey): number | null {
     const settings = this.settingsRepo.settings();
-    if (settings === undefined) return undefined;
-    if (settings.balanceKopecks === null) return null;
-    const expenses = this.sinceAnchor();
-    const frozen = this.frozenRecords();
-    if (!expenses || !frozen) return undefined;
-    return dayBudget(settings, expenses, day, this.frozenIds(), frozen);
+    return settings ? dailyLimit(settings, day) : null;
   }
 }
