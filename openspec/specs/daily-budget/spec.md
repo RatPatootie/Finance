@@ -56,64 +56,30 @@ The current balance SHALL be the balance the user last saved, plus the monthly i
 - **WHEN** the user freezes 2 000,00 ₴ into "Vacation"
 - **THEN** the balance is still 12 000,00 ₴
 
-### Requirement: Daily limit
-The daily limit SHALL be the free money at the start of today divided by the days left in the Kyiv month including today, rounded down to whole kopecks. Free money at the start of today SHALL be the current balance plus today's counted expenses, minus the frozen total. When that free money is zero or less, the daily limit SHALL be 0. Spending during the day SHALL NOT change the limit.
-
-#### Scenario: Limit for the rest of the month
-- **GIVEN** today is 2026-11-24 (7 days left including today) and the free money at the start of today is 12 000,00 ₴
-- **WHEN** the daily limit is worked out
-- **THEN** it is 1 714,28 ₴
-
-#### Scenario: Spending today does not shrink today's limit
-- **GIVEN** the daily limit is 1 714,28 ₴
-- **WHEN** the user saves an expense of 300,00 ₴ for today
-- **THEN** the daily limit is still 1 714,28 ₴
-
-#### Scenario: Last day of the month
-- **GIVEN** today is 2026-11-30 and the free money at the start of today is 500,00 ₴
-- **WHEN** the daily limit is worked out
-- **THEN** it is 500,00 ₴
-
-#### Scenario: First day of a new month
-- **GIVEN** today is 2026-12-01 and the free money at the start of today is 3 100,00 ₴
-- **WHEN** the daily limit is worked out
-- **THEN** it is 100,00 ₴ (31 days left)
-
-#### Scenario: Negative free money
-- **GIVEN** the free money at the start of today is −200,00 ₴
-- **WHEN** the daily limit is worked out
-- **THEN** it is 0,00 ₴
-
-#### Scenario: A new day gets a new limit
-- **GIVEN** the app stays open from 23:50 on 2026-11-24
-- **WHEN** it becomes 00:00 on 2026-11-25 in Kyiv
-- **THEN** the daily limit is worked out again for 6 days left
-
-#### Scenario: Frozen money is left out of the limit
-- **GIVEN** today is 2026-11-24 (7 days left), the balance at the start of today is 12 000,00 ₴ and 2 000,00 ₴ is frozen
-- **WHEN** the daily limit is worked out
-- **THEN** it is 1 428,57 ₴
-
-#### Scenario: Returning frozen money raises the limit
-- **GIVEN** the situation above
-- **WHEN** the user returns 2 000,00 ₴ to the balance
-- **THEN** the daily limit is 1 714,28 ₴
-
 ### Requirement: Left for today
-"Left for today" SHALL be the daily limit minus today's counted expenses. It SHALL be negative when the user spent more than the limit.
+"Left for today" SHALL be the daily limit minus today's spending. Today's spending SHALL be every non-deleted expense dated today outside Frozen categories, whenever the balance was set. It SHALL be negative when the user spent more than the limit.
 
 #### Scenario: Within the limit
-- **GIVEN** the daily limit is 1 714,28 ₴
-- **WHEN** the user spends 300,00 ₴ today
-- **THEN** left for today is 1 414,28 ₴
+- **GIVEN** the daily limit is 400,00 ₴
+- **WHEN** the user spends 150,00 ₴ today
+- **THEN** left for today is 250,00 ₴
 
 #### Scenario: Over the limit
-- **GIVEN** the daily limit is 500,00 ₴
-- **WHEN** the user spends 620,00 ₴ today
+- **GIVEN** the daily limit is 400,00 ₴
+- **WHEN** the user spends 520,00 ₴ today
 - **THEN** left for today is −120,00 ₴
 
+#### Scenario: Spending before the balance was set still counts
+- **GIVEN** an expense of 100,00 ₴ was saved today before the balance was entered
+- **WHEN** left for today is worked out
+- **THEN** that 100,00 ₴ is included in today's spending
+
+#### Scenario: Freezing is not spending
+- **WHEN** the user freezes 2 000,00 ₴ today
+- **THEN** left for today does not change
+
 ### Requirement: Spending status
-The status SHALL be red when the daily limit is 0 or left for today is below zero. Otherwise it SHALL be yellow when today's counted spending is at least 80 % of the daily limit, and green below that.
+The status SHALL be red when the daily limit is 0 or left for today is below zero. Otherwise it SHALL be yellow when today's spending is at least 80 % of the daily limit, and green below that.
 
 #### Scenario: Green below 80 %
 - **GIVEN** the daily limit is 1 000,00 ₴
@@ -134,3 +100,41 @@ The status SHALL be red when the daily limit is 0 or left for today is below zer
 - **GIVEN** the daily limit is 0,00 ₴
 - **WHEN** today's spending is 0,00 ₴
 - **THEN** the status is red
+
+### Requirement: Daily limit from income
+The daily limit SHALL be the monthly income times the daily share x % divided by the number of days in the current Kyiv month, rounded down to whole kopecks. The balance and frozen money SHALL NOT change it. When no daily share is set, there SHALL be no daily limit. Spending during the day SHALL NOT change the limit.
+
+#### Scenario: Thirty-day month
+- **GIVEN** the monthly income is 30 000,00 ₴, the daily share is 40 % and today is 2026-11-24
+- **WHEN** the daily limit is worked out
+- **THEN** it is 400,00 ₴
+
+#### Scenario: Thirty-one-day month
+- **GIVEN** the same income and share and today is 2026-12-05
+- **WHEN** the daily limit is worked out
+- **THEN** it is 387,09 ₴
+
+#### Scenario: February
+- **GIVEN** the same income and share and today is 2027-02-10
+- **WHEN** the daily limit is worked out
+- **THEN** it is 428,57 ₴
+
+#### Scenario: Spending today does not shrink today's limit
+- **GIVEN** the daily limit is 400,00 ₴
+- **WHEN** the user saves an expense of 300,00 ₴ for today
+- **THEN** the daily limit is still 400,00 ₴
+
+#### Scenario: Balance and frozen money do not matter
+- **GIVEN** the daily limit is 400,00 ₴
+- **WHEN** the balance becomes negative or 2 000,00 ₴ is frozen
+- **THEN** the daily limit is still 400,00 ₴
+
+#### Scenario: No daily share set
+- **GIVEN** the daily share has never been set
+- **WHEN** the home screen is shown
+- **THEN** no daily limit is worked out
+
+#### Scenario: No income
+- **GIVEN** the monthly income is 0 and the daily share is 40 %
+- **WHEN** the daily limit is worked out
+- **THEN** it is 0,00 ₴
