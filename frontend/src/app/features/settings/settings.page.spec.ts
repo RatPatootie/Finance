@@ -13,6 +13,7 @@ import { AmountSheet } from './amount.sheet';
 import { CategorySheet } from './categories/category.sheet';
 import { RemoveCategorySheet } from './categories/remove-category.sheet';
 import { PaydaySheet } from './payday.sheet';
+import { PercentSheet } from './percent.sheet';
 import { SettingsPage } from './settings.page';
 
 describe('SettingsPage', () => {
@@ -180,13 +181,29 @@ describe('SettingsPage', () => {
       expect(ret).toMatchObject({ amountKopecks: 50_000, categoryId: vacation.id, date: '2026-11-24' });
     });
 
-    it('the Show frozen switch is on by default and turns off', async () => {
-      const { tap, el, settle, waitStored } = await setup();
-      const sw = () => el.querySelector('[data-testid="toggle-show-frozen"]')!;
-      await settle(() => sw().getAttribute('aria-checked') === 'true');
-      tap('toggle-show-frozen');
-      await waitStored((s) => s.showFrozen === false);
-      await settle(() => sw().getAttribute('aria-checked') === 'false');
+    it('has no Show frozen switch any more', async () => {
+      const { el } = await setup();
+      expect(el.querySelector('[data-testid="toggle-show-frozen"]')).toBeNull();
+    });
+  });
+
+  describe('daily share', () => {
+    it('reads "Not set" until set, then saves 40 % from the percent sheet', async () => {
+      const { text, settle, tap, waitStored } = await setup();
+      await settle(() => text('row-share') === 'Not set');
+      sheetResult = 40;
+      tap('row-share');
+      expect(open).toHaveBeenCalledWith(PercentSheet, expect.objectContaining({ data: { title: 'Daily share of income', percent: null } }));
+      await waitStored((s) => s.dailySharePercent === 40);
+      await settle(() => text('row-share') === '40 %');
+    });
+
+    it('cancel saves nothing', async () => {
+      const { tap, stored } = await setup((r) => r.setDailyShare(25));
+      sheetResult = undefined;
+      tap('row-share');
+      await new Promise((r) => setTimeout(r, 30));
+      expect((await stored()).dailySharePercent).toBe(25);
     });
   });
 });

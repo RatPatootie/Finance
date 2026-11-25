@@ -41,19 +41,6 @@ Settings SHALL show each Frozen category with its frozen total and a Return acti
 - **WHEN** the user tries to return 2 500,00 ₴
 - **THEN** an error is shown and nothing is saved
 
-### Requirement: Show frozen toggle
-Settings SHALL have a "Show frozen" switch, on by default. When on, frozen records SHALL be listed, marked as frozen, and the home balance SHALL show the balance minus the frozen total. When off, frozen records SHALL be hidden from the lists and the home balance SHALL show the whole balance. The daily limit, "left today" and the status SHALL be the same in both cases.
-
-#### Scenario: Toggle on
-- **GIVEN** the balance is 12 000,00 ₴, 2 000,00 ₴ is frozen today, and "Show frozen" is on
-- **WHEN** the home screen is shown
-- **THEN** the balance reads 10 000,00 ₴ and today's list shows the freeze marked as frozen
-
-#### Scenario: Toggle off
-- **GIVEN** the same data and "Show frozen" is off
-- **WHEN** the home screen is shown
-- **THEN** the balance reads 12 000,00 ₴, the freeze is not listed, and "left today" is the same as with the toggle on
-
 ### Requirement: Frozen categories on the entry screen
 The entry screen SHALL show Frozen categories after the Normal ones, each marked with a snowflake.
 
@@ -61,3 +48,16 @@ The entry screen SHALL show Frozen categories after the Normal ones, each marked
 - **GIVEN** the Normal categories Food and Transport and the Frozen category Vacation
 - **WHEN** the entry screen opens
 - **THEN** the buttons are Food, Transport, then Vacation with a snowflake
+
+### Requirement: Frozen records are always listed and out of the shown balance
+Frozen records (freezes and returns) SHALL always be shown in the day lists, marked as frozen, on every day they are dated. The balance shown on the home screen SHALL always be the balance minus the frozen total.
+
+#### Scenario: Freeze is listed and taken off the shown balance
+- **GIVEN** the balance is 12 000,00 ₴
+- **WHEN** the user freezes 2 000,00 ₴ today
+- **THEN** the home balance reads 10 000,00 ₴ and today's list shows the freeze marked as frozen
+
+#### Scenario: Past day still shows its freeze
+- **GIVEN** a freeze was saved on Sunday 22 Nov
+- **WHEN** the user chooses Sunday 22 Nov in the week strip
+- **THEN** the freeze is listed, marked as frozen

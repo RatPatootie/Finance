@@ -38,8 +38,11 @@ export class SettingsRepository {
     return this.patch({ payday: day });
   }
 
-  setShowFrozen(show: boolean): Promise<void> {
-    return this.patch({ showFrozen: show });
+  setDailyShare(percent: number): Promise<void> {
+    if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
+      throw new Error('Daily share must be a whole percent from 1 to 100');
+    }
+    return this.patch({ dailySharePercent: percent });
   }
 
   private async patch(changes: Partial<BudgetSettings>): Promise<void> {

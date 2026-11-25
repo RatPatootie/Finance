@@ -28,14 +28,19 @@ context: |
   - Status: green (within), yellow (near limit), red (over).
   - Frozen amounts are excluded from daily budget; UI can show/hide them.
   - Expense entry must take 2-3 taps: amount keypad -> category button -> saved (date defaults to today).
+  - The app is deployed with real users. Their data lives only in IndexedDB on their devices; every change must keep it intact (see frontend/CLAUDE.md "User data").
 
 rules:
   proposal:
     - Keep each change small and shippable on its own.
     - State explicitly whether the change touches frontend, backend, or both.
+    - State whether the change touches stored user data (IndexedDB schema or record meaning).
+  design:
+    - When stored data is touched, include a Migration Plan - additive schema only, a new Dexie version with an upgrade callback if old rows need values, no deletes or renames.
   specs:
     - Use Given/When/Then scenarios.
     - Include edge cases for calculations (last day of month, negative free money, zero days).
   tasks:
     - Include unit tests for every calculation.
     - Frontend tasks must keep the app working offline.
+    - Any schema or stored-data change needs a task with a spec that opens data written by the previous version and checks it survives.

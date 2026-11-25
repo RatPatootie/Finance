@@ -1,0 +1,79 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+}
+
+h2 {
+  margin: 0;
+  font: var(--mat-sys-title-large);
+}
+
+.hint {
+  margin: -4px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
+  font-variant-numeric: tabular-nums;
+
+  [data-testid='percent'] {
+    font: var(--mat-sys-display-medium);
+    letter-spacing: -0.02em;
+
+    &.empty {
+      color: var(--mat-sys-outline);
+    }
+  }
+}
+
+.unit {
+  font: var(--mat-sys-headline-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error {
+  margin: -8px 0 0;
+  text-align: center;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-error);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn {
+  min-width: 96px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  border: 0;
+  font: var(--mat-sys-label-large);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.text {
+  background: transparent;
+  color: var(--mat-sys-primary);
+}
+
+.filled {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+
+  &:disabled {
+    opacity: 0.38;
+    cursor: default;
+  }
+}

@@ -58,7 +58,7 @@ export class WeekStrip {
     return weekDays(this.monday()).map((key, i) => {
       const isFuture = key > today;
       const dayRecords = this.records().filter((e) => e.date === key);
-      const state = isFuture ? 'none' : dayState(dayRecords, this.budget.forDay(key) ?? null, ids);
+      const state = isFuture ? 'none' : dayState(dayRecords, this.budget.limitFor(key), ids);
       return {
         key,
         letter: LETTERS[i],

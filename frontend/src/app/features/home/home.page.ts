@@ -6,7 +6,6 @@ import { catchError, concatMap, EMPTY, firstValueFrom, switchMap } from 'rxjs';
 import { BudgetService } from '../../core/budget/budget.service';
 import { ExpenseRepository, sumKopecks } from '../../core/db/expense.repository';
 import { Expense } from '../../core/db/models';
-import { SettingsRepository } from '../../core/db/settings.repository';
 import { formatDayLabel } from '../../core/date/format';
 import { DateKey } from '../../core/date/kyiv-date';
 import { TodayService } from '../../core/date/today.service';
@@ -39,18 +38,13 @@ export class HomePage {
   protected readonly listHeading = computed(() => (this.isToday() ? 'Today' : formatDayLabel(this.day())));
   protected readonly emptyText = computed(() => (this.isToday() ? 'Nothing spent today yet.' : 'Nothing recorded this day.'));
 
-  private readonly dayExpenses = toSignal(
+  protected readonly dayExpenses = toSignal(
     toObservable(this.day).pipe(switchMap((day) => this.expenses.forDate$(day))),
     { initialValue: [] as Expense[] },
   );
   private readonly budgetService = inject(BudgetService);
-  private readonly settings = inject(SettingsRepository).settings;
   private readonly frozenIds = this.budgetService.frozenIds;
-  private readonly showFrozen = computed(() => this.settings()?.showFrozen ?? true);
 
-  protected readonly listed = computed(() =>
-    this.showFrozen() ? this.dayExpenses() : this.dayExpenses().filter((e) => !this.frozenIds().has(e.categoryId)),
-  );
   protected readonly dayTotal = computed(() =>
     sumKopecks(this.dayExpenses().filter((e) => !this.frozenIds().has(e.categoryId))),
   );
@@ -58,8 +52,13 @@ export class HomePage {
   protected readonly budget = this.budgetService.budget;
   protected readonly shownBalance = computed(() => {
     const b = this.budget();
-    if (!b) return 0;
-    return this.showFrozen() ? b.balance - b.frozen : b.balance;
+    return b ? b.balance - b.frozen : 0;
+  });
+  protected readonly usedPercent = computed(() => {
+    const b = this.budget();
+    if (!b || b.limit === null) return 0;
+    if (b.limit <= 0) return 100;
+    return Math.min(100, Math.round((b.spentToday / b.limit) * 1000) / 10);
   });
 
   protected pickDay(day: DateKey): void {

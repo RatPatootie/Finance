@@ -29,16 +29,9 @@
       </button>
     </li>
     <li>
-      <button
-        type="button"
-        class="row"
-        role="switch"
-        data-testid="toggle-show-frozen"
-        [attr.aria-checked]="showFrozen()"
-        (click)="toggleShowFrozen()"
-      >
-        <span class="name">Show frozen</span>
-        <span class="switch" [class.on]="showFrozen()" aria-hidden="true"><span class="knob"></span></span>
+      <button type="button" class="row" data-testid="row-share" (click)="editShare()">
+        <span class="name">Daily share of income</span>
+        <span class="value" [class.unset]="share() === null">{{ share() === null ? 'Not set' : share() + ' %' }}</span>
       </button>
     </li>
   </ul>

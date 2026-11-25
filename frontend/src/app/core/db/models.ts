@@ -45,7 +45,10 @@ export interface BudgetSettings {
   balanceDate: DateKey | null;
   monthlyIncomeKopecks: number;
   payday: number;
+  // No longer read: frozen money is always listed. Kept so stored rows stay unchanged.
   showFrozen?: boolean;
+  // Whole percent 1-100; missing means the user has not set it yet.
+  dailySharePercent?: number;
   updatedAt: string;
 }
 

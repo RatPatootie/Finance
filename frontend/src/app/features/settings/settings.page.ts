@@ -14,6 +14,7 @@ import { AmountSheet, AmountSheetData } from './amount.sheet';
 import { CategorySheet, CategorySheetData, CategorySheetResult } from './categories/category.sheet';
 import { RemoveCategoryData, RemoveCategoryResult, RemoveCategorySheet } from './categories/remove-category.sheet';
 import { PaydaySheet } from './payday.sheet';
+import { PercentSheet, PercentSheetData } from './percent.sheet';
 
 @Component({
   selector: 'app-settings-page',
@@ -35,7 +36,7 @@ export class SettingsPage {
 
   protected readonly settings = this.repo.settings;
   protected readonly categories = this.categoryRepo.listed;
-  protected readonly showFrozen = computed(() => this.settings()?.showFrozen ?? true);
+  protected readonly share = computed(() => this.settings()?.dailySharePercent ?? null);
   protected readonly frozenRows = computed(() => {
     const totals = this.frozenTotals()?.byCategory;
     return this.categories()
@@ -75,8 +76,13 @@ export class SettingsPage {
     if (day !== undefined) await this.save(() => this.repo.setPayday(day), `Payday: day ${day}`);
   }
 
-  protected toggleShowFrozen(): void {
-    void this.save(() => this.repo.setShowFrozen(!this.showFrozen()), this.showFrozen() ? 'Frozen hidden' : 'Frozen shown');
+  protected async editShare(): Promise<void> {
+    const ref = this.sheet.open<PercentSheet, PercentSheetData, number>(PercentSheet, {
+      data: { title: 'Daily share of income', percent: this.share() },
+      ariaLabel: 'Daily share of income',
+    });
+    const percent = await firstValueFrom(ref.afterDismissed());
+    if (percent !== undefined) await this.save(() => this.repo.setDailyShare(percent), `Daily share: ${percent} %`);
   }
 
   protected async returnFrozen(category: Category, total: number): Promise<void> {

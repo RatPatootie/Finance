@@ -65,6 +65,43 @@ describe('SettingsRepository', () => {
     expect((await repo.get()).updatedAt > first).toBe(true);
   });
 
+  it('reads a settings row saved by the previous version: no daily share, everything else unchanged', async () => {
+    const repo = setup();
+    await db.settings.put({
+      id: 'budget',
+      balanceKopecks: 1_200_000,
+      balanceSetAt: '2026-11-20T07:00:00.000Z',
+      balanceDate: '2026-11-20',
+      monthlyIncomeKopecks: 3_000_000,
+      payday: 25,
+      showFrozen: false,
+      updatedAt: '2026-11-20T07:00:00.000Z',
+    });
+    const s = await repo.get();
+    expect(s.dailySharePercent).toBeUndefined();
+    expect(s).toMatchObject({ balanceKopecks: 1_200_000, monthlyIncomeKopecks: 3_000_000, payday: 25, showFrozen: false });
+
+    await repo.setDailyShare(40);
+    expect(await repo.get()).toMatchObject({
+      dailySharePercent: 40,
+      balanceKopecks: 1_200_000,
+      balanceSetAt: '2026-11-20T07:00:00.000Z',
+      monthlyIncomeKopecks: 3_000_000,
+      payday: 25,
+      showFrozen: false,
+    });
+  });
+
+  it('daily share takes a whole percent from 1 to 100', async () => {
+    const repo = setup();
+    expect(() => repo.setDailyShare(0)).toThrow();
+    expect(() => repo.setDailyShare(101)).toThrow();
+    expect(() => repo.setDailyShare(2.5)).toThrow();
+    await repo.setDailyShare(1);
+    await repo.setDailyShare(100);
+    expect((await repo.get()).dailySharePercent).toBe(100);
+  });
+
   it('rejects invalid values', async () => {
     const repo = setup();
     expect(() => repo.setBalance(-1)).toThrow();

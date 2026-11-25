@@ -94,7 +94,8 @@ describe('HomePage', () => {
 
   it('shows the week strip; saving today recolours today', async () => {
     const { el, add, settle } = await setup();
-    await TestBed.inject(SettingsRepository).setBalance(100_000);
+    await TestBed.inject(SettingsRepository).setMonthlyIncome(3_000_000);
+    await TestBed.inject(SettingsRepository).setDailyShare(40);
     const today = () => el.querySelector('app-week-strip [data-day="2026-11-23"]');
     await settle(() => today()?.getAttribute('data-state') === 'none');
     await add(5_000, 'Food');
@@ -195,49 +196,88 @@ describe('HomePage', () => {
       expect(navigate).toHaveBeenCalledWith('/settings');
     });
 
+    const withShare = async () => {
+      const settings = TestBed.inject(SettingsRepository);
+      await settings.setMonthlyIncome(3_000_000);
+      await settings.setDailyShare(40);
+      return settings;
+    };
+
+    it('asks for the daily share until it is set; the prompt opens Settings', async () => {
+      const { el, settle } = await setup();
+      await TestBed.inject(SettingsRepository).setBalance(1_200_000);
+      await settle(() => !!el.querySelector('[data-testid="setup-share"]'));
+      expect(el.querySelector('[data-testid="hero-left"]')).toBeNull();
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+      el.querySelector<HTMLButtonElement>('[data-testid="setup-share"]')!.click();
+      expect(navigate).toHaveBeenCalledWith('/settings');
+    });
+
+    it('top to bottom: balance, add button, week strip, day list', async () => {
+      const { el, settle } = await setup();
+      await TestBed.inject(SettingsRepository).setBalance(1_200_000);
+      await settle(() => !!el.querySelector('[data-testid="hero-balance"]'));
+      const order = [
+        '[data-testid="hero-balance"]',
+        '[data-testid="add-expense"]',
+        'app-week-strip',
+        'app-today-list.today',
+      ].map((s) => el.querySelector(s)!);
+      for (let i = 1; i < order.length; i++) {
+        expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+    });
+
     it('shows the balance and left for today in green, and updates after a save', async () => {
       const { el, add, settle } = await setup();
-      now = new Date('2026-11-24T07:00:00Z'); // 09:00 Kyiv, 7 days left
+      now = new Date('2026-11-24T07:00:00Z');
       TestBed.inject(TodayService).refresh();
-      await TestBed.inject(SettingsRepository).setBalance(1_200_000);
-      await settle(() => balance(el) === '12 000,00 ₴');
-      expect(left(el)).toBe('1 714,28 ₴ left today');
+      const settings = await withShare();
+      await settings.setBalance(1_200_000);
+      await settle(() => balance(el) === '12 000,00 ₴' && left(el) === '400,00 ₴ left today');
 
       now = new Date('2026-11-24T11:00:00Z');
-      await add(30_000, 'Food', '2026-11-24');
-      await settle(() => balance(el) === '11 700,00 ₴');
-      expect(left(el)).toBe('1 414,28 ₴ left today');
+      await add(15_000, 'Food', '2026-11-24');
+      await settle(() => balance(el) === '11 850,00 ₴');
+      expect(left(el)).toBe('250,00 ₴ left today');
       expect(status(el)).toBe('green');
     });
 
     it('shows "over today" in red', async () => {
       const { el, add, settle } = await setup();
-      now = new Date('2026-11-30T07:00:00Z'); // last day: limit = all free money
+      now = new Date('2026-11-24T07:00:00Z');
       TestBed.inject(TodayService).refresh();
-      await TestBed.inject(SettingsRepository).setBalance(50_000);
-      now = new Date('2026-11-30T08:00:00Z');
-      await add(62_000, 'Food', '2026-11-30');
+      const settings = await withShare();
+      await settings.setBalance(50_000);
+      now = new Date('2026-11-24T08:00:00Z');
+      await add(52_000, 'Food', '2026-11-24');
       await settle(() => left(el).endsWith('over today'));
       expect(left(el)).toBe('120,00 ₴ over today');
       expect(status(el)).toBe('red');
-      expect(balance(el)).toBe('-120,00 ₴');
+      expect(balance(el)).toBe('-20,00 ₴');
     });
 
-    it('Show frozen on: balance without frozen money and the freeze listed; off: whole balance, freeze hidden', async () => {
+    it('frozen money is always listed and kept out of the shown balance, today and on a past day', async () => {
       const { el, rows, hero, settle } = await setup();
       now = new Date('2026-11-24T07:00:00Z');
       TestBed.inject(TodayService).refresh();
-      const settings = TestBed.inject(SettingsRepository);
+      const settings = await withShare();
       await settings.setBalance(1_200_000);
       const vacation = await TestBed.inject(CategoryRepository).add('Vacation', 'frozen');
       now = new Date('2026-11-24T08:00:00Z');
       await TestBed.inject(ExpenseRepository).add({ amountKopecks: 200_000, categoryId: vacation.id, date: '2026-11-24' });
-      await settle(() => balance(el) === '10 000,00 ₴' && rows().length === 1);
+      await TestBed.inject(ExpenseRepository).add({ amountKopecks: 30_000, categoryId: vacation.id, date: '2026-11-23' });
+      await settle(() => balance(el) === '9 700,00 ₴' && rows().length === 1);
       expect(el.querySelector('[data-testid="expense-row"]')!.getAttribute('data-kind')).toBe('freeze');
       expect(rows()[0]).toContain('Frozen');
-      const leftOn = left(el);
-      expect(leftOn).toBe('1 428,57 ₴ left today');
+      expect(left(el)).toBe('400,00 ₴ left today');
       expect(hero()).toBe('0,00 ₴');
+
+      el.querySelector<HTMLButtonElement>('app-week-strip [data-day="2026-11-23"]')!.click();
+      await settle(() => rows().length === 1 && rows()[0].includes('300,00'));
+      expect(rows()[0]).toContain('Frozen');
+      el.querySelector<HTMLButtonElement>('app-week-strip [data-day="2026-11-24"]')!.click();
+      await settle(() => rows().length === 1 && rows()[0].includes('2 000,00'));
 
       now = new Date('2026-11-24T09:00:00Z');
       const ret = await TestBed.inject(ExpenseRepository).add({
@@ -251,19 +291,46 @@ describe('HomePage', () => {
       expect(returnRow.textContent!.replace(/[  ]/g, ' ')).toMatch(/Returned[\s\S]*−500,00 ₴/);
       await TestBed.inject(ExpenseRepository).softDelete(ret.id);
       await settle(() => rows().length === 1);
+    });
 
-      await settings.setShowFrozen(false);
-      await settle(() => balance(el) === '12 000,00 ₴' && rows().length === 0);
-      expect(left(el)).toBe(leftOn);
+    it('shows a bar of how much of today’s limit is used', async () => {
+      const { el, add, settle } = await setup();
+      now = new Date('2026-11-24T07:00:00Z');
+      TestBed.inject(TodayService).refresh();
+      const settings = await withShare();
+      await settings.setBalance(1_200_000);
+      const bar = () => el.querySelector('[role="progressbar"]');
+      const usage = () => el.querySelector('[data-testid="usage"]');
+      await settle(() => bar()?.getAttribute('aria-valuenow') === '0');
+
+      now = new Date('2026-11-24T08:00:00Z');
+      await add(15_000, 'Food', '2026-11-24');
+      await settle(() => bar()?.getAttribute('aria-valuenow') === '37.5');
+      expect(norm(bar()!.getAttribute('aria-label'))).toBe('150,00 ₴ of 400,00 ₴ used today');
+      expect(el.querySelector('[data-testid="usage"]')!.textContent!.trim()).toBe('');
+      expect(usage()!.classList.contains('status-green')).toBe(true);
+      expect(el.querySelector<HTMLElement>('[data-testid="usage-fill"]')!.style.width).toBe('37.5%');
+
+      await add(37_000, 'Food', '2026-11-24');
+      await settle(() => bar()?.getAttribute('aria-valuenow') === '100');
+      expect(usage()!.classList.contains('status-red')).toBe(true);
+    });
+
+    it('shows no bar without a daily share', async () => {
+      const { el, settle } = await setup();
+      await TestBed.inject(SettingsRepository).setBalance(1_200_000);
+      await settle(() => !!el.querySelector('[data-testid="setup-share"]'));
+      expect(el.querySelector('[data-testid="usage"]')).toBeNull();
     });
 
     it('turns yellow from 80 % of the limit', async () => {
       const { el, add, settle } = await setup();
-      now = new Date('2026-11-30T07:00:00Z');
+      now = new Date('2026-11-24T07:00:00Z');
       TestBed.inject(TodayService).refresh();
-      await TestBed.inject(SettingsRepository).setBalance(100_000);
-      now = new Date('2026-11-30T08:00:00Z');
-      await add(80_000, 'Food', '2026-11-30');
+      const settings = await withShare();
+      await settings.setBalance(100_000);
+      now = new Date('2026-11-24T08:00:00Z');
+      await add(32_000, 'Food', '2026-11-24');
       await settle(() => status(el) === 'yellow');
     });
   });
